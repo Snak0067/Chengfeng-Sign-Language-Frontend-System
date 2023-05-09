@@ -38,7 +38,23 @@ import nestedRouter from './modules/nested'
  * a base page that does not have permission requirements
  * all roles can be accessed
  */
+
+// constantRoutes： 代表那些不需要动态判断权限的路由，如登录页、404、等通用页面
+//  asyncRoutes： 代表那些需求动态判断权限并通过 addRoutes 动态添加的页面。
 export const constantRoutes = [
+  {
+    path: '/',
+    component: Layout,
+    redirect: '/homepage',
+    children: [
+      {
+        path: 'homepage',
+        component: () => import('@/views/homepage/index'),
+        name: 'homepage',
+        meta: {title: '概览', icon: 'excel', affix: true}
+      }
+    ]
+  },
   {
     path: '/redirect',
     component: Layout,
@@ -79,7 +95,7 @@ export const constantRoutes = [
         path: 'dashboard',
         component: () => import('@/views/dashboard/index'),
         name: 'Dashboard',
-        meta: { title: 'Dashboard', icon: 'dashboard', affix: true }
+        meta: {title: 'Dashboard', icon: 'dashboard', affix: true}
       }
     ]
   },
@@ -91,7 +107,7 @@ export const constantRoutes = [
         path: 'index',
         component: () => import('@/views/documentation/index'),
         name: 'Documentation',
-        meta: { title: 'Documentation', icon: 'documentation', affix: true }
+        meta: {title: 'Documentation', icon: 'documentation', affix: true}
       }
     ]
   },
@@ -104,7 +120,7 @@ export const constantRoutes = [
         path: 'index',
         component: () => import('@/views/guide/index'),
         name: 'Guide',
-        meta: { title: 'Guide', icon: 'guide', noCache: true }
+        meta: {title: 'Guide', icon: 'guide', noCache: true}
       }
     ]
   },
@@ -118,7 +134,7 @@ export const constantRoutes = [
         path: 'index',
         component: () => import('@/views/profile/index'),
         name: 'Profile',
-        meta: { title: 'Profile', icon: 'user', noCache: true }
+        meta: {title: 'Profile', icon: 'user', noCache: true}
       }
     ]
   }
@@ -130,15 +146,47 @@ export const constantRoutes = [
  */
 export const asyncRoutes = [
   {
+    path: '/Recognition',
+    component: Layout,
+    redirect: '/Recognition/usage', // 重定向地址，在面包屑中点击会重定向去的地址
+    alwaysShow: true, // 一直显示根路由
+    name: 'Recognition',
+    meta: {
+      title: 'Recognition',
+      icon: 'lock',
+      roles: ['admin', 'editor'] // 你可以在根路由设置权限，这样它下面所有的子路由都继承了这个权限
+    },
+    children: [
+      {
+        path: 'dataProcessing',
+        component: () => import('@/views/Recognition/dataProcessing'),
+        name: 'dataProcessing',
+        meta: {
+          title: 'data Processing',
+          roles: ['admin'] // 或者你可以给每一个子路由设置自己的权限
+        }
+      },
+      {
+        path: 'signProcessing',
+        component: () => import('@/views/Recognition/signProcessing'),
+        name: 'signProcessing',
+        meta: {
+          title: 'sign Processing'
+          // if do not set roles, means: this page does not require Recognition
+        }
+      }
+    ]
+  },
+  {
     path: '/permission',
     component: Layout,
-    redirect: '/permission/page',
-    alwaysShow: true, // will always show the root menu
+    redirect: '/permission/page', // 重定向地址，在面包屑中点击会重定向去的地址
+    alwaysShow: true, // 一直显示根路由
     name: 'Permission',
     meta: {
       title: 'Permission',
       icon: 'lock',
-      roles: ['admin', 'editor'] // you can set roles in root nav
+      roles: ['admin', 'editor'] // 你可以在根路由设置权限，这样它下面所有的子路由都继承了这个权限
     },
     children: [
       {
@@ -147,7 +195,7 @@ export const asyncRoutes = [
         name: 'PagePermission',
         meta: {
           title: 'Page Permission',
-          roles: ['admin'] // or you can only set roles in sub nav
+          roles: ['admin'] // 或者你可以给每一个子路由设置自己的权限
         }
       },
       {
@@ -179,7 +227,7 @@ export const asyncRoutes = [
         path: 'index',
         component: () => import('@/views/icons/index'),
         name: 'Icons',
-        meta: { title: 'Icons', icon: 'icon', noCache: true }
+        meta: {title: 'Icons', icon: 'icon', noCache: true}
       }
     ]
   },
@@ -204,20 +252,20 @@ export const asyncRoutes = [
         path: 'create',
         component: () => import('@/views/example/create'),
         name: 'CreateArticle',
-        meta: { title: 'Create Article', icon: 'edit' }
+        meta: {title: 'Create Article', icon: 'edit'}
       },
       {
         path: 'edit/:id(\\d+)',
         component: () => import('@/views/example/edit'),
         name: 'EditArticle',
-        meta: { title: 'Edit Article', noCache: true, activeMenu: '/example/list' },
+        meta: {title: 'Edit Article', noCache: true, activeMenu: '/example/list'},
         hidden: true
       },
       {
         path: 'list',
         component: () => import('@/views/example/list'),
         name: 'ArticleList',
-        meta: { title: 'Article List', icon: 'list' }
+        meta: {title: 'Article List', icon: 'list'}
       }
     ]
   },
@@ -230,7 +278,7 @@ export const asyncRoutes = [
         path: 'index',
         component: () => import('@/views/tab/index'),
         name: 'Tab',
-        meta: { title: 'Tab', icon: 'tab' }
+        meta: {title: 'Tab', icon: 'tab'}
       }
     ]
   },
@@ -249,13 +297,13 @@ export const asyncRoutes = [
         path: '401',
         component: () => import('@/views/error-page/401'),
         name: 'Page401',
-        meta: { title: '401', noCache: true }
+        meta: {title: '401', noCache: true}
       },
       {
         path: '404',
         component: () => import('@/views/error-page/404'),
         name: 'Page404',
-        meta: { title: '404', noCache: true }
+        meta: {title: '404', noCache: true}
       }
     ]
   },
@@ -268,7 +316,7 @@ export const asyncRoutes = [
         path: 'log',
         component: () => import('@/views/error-log/index'),
         name: 'ErrorLog',
-        meta: { title: 'Error Log', icon: 'bug' }
+        meta: {title: 'Error Log', icon: 'bug'}
       }
     ]
   },
@@ -287,25 +335,25 @@ export const asyncRoutes = [
         path: 'export-excel',
         component: () => import('@/views/excel/export-excel'),
         name: 'ExportExcel',
-        meta: { title: 'Export Excel' }
+        meta: {title: 'Export Excel'}
       },
       {
         path: 'export-selected-excel',
         component: () => import('@/views/excel/select-excel'),
         name: 'SelectExcel',
-        meta: { title: 'Export Selected' }
+        meta: {title: 'Export Selected'}
       },
       {
         path: 'export-merge-header',
         component: () => import('@/views/excel/merge-header'),
         name: 'MergeHeader',
-        meta: { title: 'Merge Header' }
+        meta: {title: 'Merge Header'}
       },
       {
         path: 'upload-excel',
         component: () => import('@/views/excel/upload-excel'),
         name: 'UploadExcel',
-        meta: { title: 'Upload Excel' }
+        meta: {title: 'Upload Excel'}
       }
     ]
   },
@@ -316,13 +364,13 @@ export const asyncRoutes = [
     redirect: '/zip/download',
     alwaysShow: true,
     name: 'Zip',
-    meta: { title: 'Zip', icon: 'zip' },
+    meta: {title: 'Zip', icon: 'zip'},
     children: [
       {
         path: 'download',
         component: () => import('@/views/zip/index'),
         name: 'ExportZip',
-        meta: { title: 'Export Zip' }
+        meta: {title: 'Export Zip'}
       }
     ]
   },
@@ -336,7 +384,7 @@ export const asyncRoutes = [
         path: 'index',
         component: () => import('@/views/pdf/index'),
         name: 'PDF',
-        meta: { title: 'PDF', icon: 'pdf' }
+        meta: {title: 'PDF', icon: 'pdf'}
       }
     ]
   },
@@ -354,7 +402,7 @@ export const asyncRoutes = [
         path: 'index',
         component: () => import('@/views/theme/index'),
         name: 'Theme',
-        meta: { title: 'Theme', icon: 'theme' }
+        meta: {title: 'Theme', icon: 'theme'}
       }
     ]
   },
@@ -367,7 +415,7 @@ export const asyncRoutes = [
         path: 'index',
         component: () => import('@/views/clipboard/index'),
         name: 'ClipboardDemo',
-        meta: { title: 'Clipboard', icon: 'clipboard' }
+        meta: {title: 'Clipboard', icon: 'clipboard'}
       }
     ]
   },
@@ -378,18 +426,18 @@ export const asyncRoutes = [
     children: [
       {
         path: 'https://github.com/PanJiaChen/vue-element-admin',
-        meta: { title: 'External Link', icon: 'link' }
+        meta: {title: 'External Link', icon: 'link'}
       }
     ]
   },
 
   // 404 page must be placed at the end !!!
-  { path: '*', redirect: '/404', hidden: true }
+  {path: '*', redirect: '/404', hidden: true}
 ]
 
 const createRouter = () => new Router({
   // mode: 'history', // require service support
-  scrollBehavior: () => ({ y: 0 }),
+  scrollBehavior: () => ({y: 0}),
   routes: constantRoutes
 })
 
