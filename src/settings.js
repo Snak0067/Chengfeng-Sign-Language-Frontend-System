@@ -1,5 +1,5 @@
 module.exports = {
-  title: 'Xiaofeng\'s Sign Language Recognition System',
+  title: 'Xiaofeng\'s Sign Language dataProcess System',
 
   /**
    * @type {boolean} true | false

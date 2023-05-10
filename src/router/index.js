@@ -56,6 +56,44 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/dataProcess',
+    component: Layout,
+    redirect: '/dataProcess/usage', // 重定向地址，在面包屑中点击会重定向去的地址
+    alwaysShow: true, // 一直显示根路由
+    name: 'dataProcess',
+    meta: {
+      title: '应用列表',
+      icon: 'el-icon-s-help',
+      // roles: ['admin', 'editor'] // 你可以在根路由设置权限，这样它下面所有的子路由都继承了这个权限
+    },
+    children: [
+      {
+        path: 'Generate skeleton features',
+        component: () => import('@/views/dataProcess/Generate skeleton features.vue'),
+        name: 'Generate skeleton features',
+        meta: {
+          title: '生成骨架特征',
+        }
+      },
+      {
+        path: 'Generate rgb frames',
+        component: () => import('@/views/dataProcess/Generate rgb frames.vue'),
+        name: 'Generate rgb frames',
+        meta: {
+          title: '生成RGB帧'
+        }
+      },
+       {
+        path: 'Generate flow data',
+        component: () => import('@/views/dataProcess/Generate flow data.vue'),
+        name: 'Generate flow data',
+        meta: {
+          title: '生成流式数据'
+        }
+      }
+    ]
+  },
+  {
     path: '/redirect',
     component: Layout,
     hidden: true,
@@ -145,38 +183,7 @@ export const constantRoutes = [
  * the routes that need to be dynamically loaded based on user roles
  */
 export const asyncRoutes = [
-  {
-    path: '/Recognition',
-    component: Layout,
-    redirect: '/Recognition/usage', // 重定向地址，在面包屑中点击会重定向去的地址
-    alwaysShow: true, // 一直显示根路由
-    name: 'Recognition',
-    meta: {
-      title: 'Recognition',
-      icon: 'lock',
-      roles: ['admin', 'editor'] // 你可以在根路由设置权限，这样它下面所有的子路由都继承了这个权限
-    },
-    children: [
-      {
-        path: 'dataProcessing',
-        component: () => import('@/views/Recognition/dataProcessing'),
-        name: 'dataProcessing',
-        meta: {
-          title: 'data Processing',
-          roles: ['admin'] // 或者你可以给每一个子路由设置自己的权限
-        }
-      },
-      {
-        path: 'signProcessing',
-        component: () => import('@/views/Recognition/signProcessing'),
-        name: 'signProcessing',
-        meta: {
-          title: 'sign Processing'
-          // if do not set roles, means: this page does not require Recognition
-        }
-      }
-    ]
-  },
+
   {
     path: '/permission',
     component: Layout,

@@ -4,7 +4,7 @@
 
 <script>
 export default {
-  name: "dataProcessing"
+  name: "Generate flow data"
 }
 </script>
 
