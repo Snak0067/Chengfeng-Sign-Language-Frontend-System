@@ -62,7 +62,7 @@ export const constantRoutes = [
     alwaysShow: true, // 一直显示根路由
     name: 'dataProcess',
     meta: {
-      title: '应用列表',
+      title: '数据预处理',
       icon: 'el-icon-s-help',
       // roles: ['admin', 'editor'] // 你可以在根路由设置权限，这样它下面所有的子路由都继承了这个权限
     },
