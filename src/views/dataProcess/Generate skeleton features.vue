@@ -123,8 +123,13 @@
         </div>
         <!-- 上传对话框 -->
         <div class="upload-box">
-          <el-upload class="upload-demo" action="#" drag multiple :headers="headers" :auto-upload="false"
-                     :file-list="fileList" :on-change="handleChange">
+          <el-upload class="upload-demo"
+                     action="#" drag multiple
+                     :headers="headers"
+                     :auto-upload="false"
+                     :limit="1"
+                     :file-list="fileList"
+                     :on-change="handleChange">
             <i class="el-icon-upload"></i>
             <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
             <div class="el-upload__tip" slot="tip">上传 mp4 格式文件</div>
@@ -132,7 +137,7 @@
         </div>
         <div slot="footer" class="dialog-footer">
           <el-button @click="dialogOfUpload = false">取 消</el-button>
-          <el-button type="primary" @click="confirmUpload()">上 传</el-button>
+          <el-button type="primary" @click="uploadVideos()">上 传</el-button>
         </div>
 
       </el-dialog>
@@ -197,11 +202,17 @@ export default {
     handleDrag() {
       this.$refs.select.blur()
     },
-    upload() {
-      const videoFileData = new FormData();
+    uploadVideos() {
+      if (!this.checkUpload()) {
+        return;
+      }
+      const formData = new FormData();
       this.fileList.forEach(file => {
-        videoFileData.append('file', file.raw);
+        formData.append('videoFile', file.raw);
       });
+      formData.append('videoName', this.videoText.videoName);
+      formData.append('videoDescribe', this.videoText.videoDescribe);
+      console.log(formData)
       axios.post('http://127.0.0.1:8000/uploadVideo/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -209,16 +220,56 @@ export default {
         }
       })
         .then(response => {
-          console.log(response);
+          if (response.status === 200) {
+            alert('上传成功!')
+            this.videoText.videoName = ''
+            this.videoText.videoDescribe = ''
+            this.fileList = []
+            this.dialogOfUpload = false
+            console.log(response);
+          }
+
         })
         .catch(error => {
+          alert('上传失败，请稍后重试...')
           console.log(error);
         });
     },
+    checkUpload() {
+      if (!this.videoText.videoName) {
+        alert('视频名称不能为空');
+        return false;
+      }
+      if (!this.videoText.videoDescribe) {
+        alert('视频描述不能为空');
+        return false;
+      }
+      if (this.fileList.length === 0) {
+        alert('请先选择视频文件');
+        return false;
+      }
+      const fileType = this.fileList[0].name.split('.').pop().toLowerCase();
+      if (!['mp4', 'avi', 'mov'].includes(fileType)) {
+        alert('只能上传 mp4、avi 或 mov 格式的视频');
+        return false;
+      }
+      for (let i = 0; i < this.fileList; i++) {
+
+      }
+      return true;
+    },
     async getList() {
       this.listLoading = true
-      const token = localStorage.getItem('token');
-      const {data} = await fetchList()
+      const videolist = () => {
+        return axios.post('http://127.0.0.1:8000/video_list/', {}, {
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          }
+        })
+      }
+
+      const {data} = await videolist()
+      console.log(data)
       const items = data.items
       this.list = items.map(v => {
         this.$set(v, 'edit', false) // https://vuejs.org/v2/guide/reactivity.html
