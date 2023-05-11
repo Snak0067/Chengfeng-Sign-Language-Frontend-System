@@ -14,14 +14,12 @@
 
       <span
         class="item-icon"
-        :style="{
-          'background-image': `url(${require('@/assets/images/login_bg.jpg')})`,
-        }"
-      ></span>
+        :style="{          'background-image': `url(${require('@/assets/images/login_bg.jpg')})`,
+        }"></span>
 
       <el-form-item prop="username">
         <span class="svg-container">
-          <svg-icon icon-class="user" />
+          <svg-icon icon-class="user"/>
         </span>
         <el-input
           ref="username"
@@ -34,15 +32,10 @@
         />
       </el-form-item>
 
-      <el-tooltip
-        v-model="capsTooltip"
-        content="Caps lock is On"
-        placement="right"
-        manual
-      >
+      <el-tooltip v-model="capsTooltip" content="Caps lock is On" placement="right" manual>
         <el-form-item prop="password">
           <span class="svg-container">
-            <svg-icon icon-class="password" />
+            <svg-icon icon-class="password"/>
           </span>
           <el-input
             :key="passwordType"
@@ -56,11 +49,11 @@
             @keyup.native="checkCapslock"
             @blur="capsTooltip = false"
             @keyup.enter.native="handleLogin"
+
           />
+          <!-- @keyup.enter.native="loginSubmit" 监听了用户按下回车键，然后会触发loginSubmit方法，实现提交表单的功能-->
           <span class="show-pwd" @click="showPwd">
-            <svg-icon
-              :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'"
-            />
+            <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'"/>
           </span>
         </el-form-item>
       </el-tooltip>
@@ -70,17 +63,18 @@
         type="primary"
         style="width: 100%; margin-bottom: 30px"
         @click.native.prevent="handleLogin"
-        >登录</el-button
+      >登录
+      </el-button
       >
     </el-form>
 
     <el-dialog title="Or connect with" :visible.sync="showDialog">
       Can not be simulated on local, so please combine you own business
       simulation! ! !
-      <br />
-      <br />
-      <br />
-      <social-sign />
+      <br/>
+      <br/>
+      <br/>
+      <social-sign/>
     </el-dialog>
     <div class="bottom-title-container">
       <h3 class="title">吾爱无声 手语世界</h3>
@@ -89,38 +83,39 @@
 </template>
 
 <script>
-import { validUsername } from "@/utils/validate";
+import {validUsername} from "@/utils/validate";
 import SocialSign from "./components/SocialSignin";
+import axios from "axios";
 
 export default {
   name: "Login",
-  components: { SocialSign },
+  components: {SocialSign},
   data() {
-    const validateUsername = (rule, value, callback) => {
-      if (!validUsername(value)) {
-        callback(new Error("Please enter the correct user name"));
-      } else {
-        callback();
-      }
-    };
+    // const validateUsername = (rule, value, callback) => {
+    //   if (!validUsername(value)) {
+    //     callback(new Error("Please enter the correct user name"));
+    //   } else {
+    //     callback();
+    //   }
+    // };
     const validatePassword = (rule, value, callback) => {
       if (value.length < 6) {
-        callback(new Error("The password can not be less than 6 digits"));
+        callback(new Error("密码不得少于6位数字及字母的组合"));
       } else {
         callback();
       }
     };
     return {
       loginForm: {
-        username: "admin",
-        password: "111111",
+        username: "",
+        password: "",
       },
       loginRules: {
         username: [
-          { required: true, trigger: "blur", validator: validateUsername },
+          {required: true, trigger: "blur", message: '请输入正确的用户名'},
         ],
         password: [
-          { required: true, trigger: "blur", validator: validatePassword },
+          {required: true, trigger: "blur", validator: validatePassword},
         ],
       },
       passwordType: "password",
@@ -129,6 +124,7 @@ export default {
       showDialog: false,
       redirect: undefined,
       otherQuery: {},
+
     };
   },
   watch: {
@@ -157,10 +153,29 @@ export default {
     // window.removeEventListener('storage', this.afterQRScan)
   },
   methods: {
-    checkCapslock(e) {
-      const { key } = e;
-      this.capsTooltip = key && key.length === 1 && key >= "A" && key <= "Z";
+    // 登录提交
+    async loginSubmit(loginForm) {
+      try {
+        await this.$refs[loginForm].validate();
+        const response = await axios.post('http://127.0.0.1:8000/login/', JSON.stringify(this.loginForm), {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        localStorage.setItem('token', response.data.token);
+        this.$router.push({path: this.redirect || '/', query: this.otherQuery})
+        this.loading = false
+        console.log("登录成功");
+      } catch (error) {
+        console.log(error);
+      }
     },
+
+    checkCapslock(e) {
+      const {key} = e;
+      this.capsTooltip = key && key.length === 1 && key >= "A" && key <= "Z";
+    }
+    ,
     showPwd() {
       if (this.passwordType === "password") {
         this.passwordType = "";
@@ -175,24 +190,25 @@ export default {
       this.$refs.loginForm.validate((valid) => {
         if (valid) {
           this.loading = true;
-          this.$store
-            .dispatch("user/login", this.loginForm)
-            .then(() => {
-              this.$router.push({
-                path: this.redirect || "/",
-                query: this.otherQuery,
-              });
+          axios.post('http://127.0.0.1:8000/login/', this.loginForm)
+            .then(response => {
+              // 登录成功后的处理
+              localStorage.setItem('token', response.data.token);
+              this.$router.push('/home');
               this.loading = false;
             })
-            .catch(() => {
+            .catch(error => {
+              // 登录失败后的处理
+              console.log(error);
               this.loading = false;
             });
         } else {
-          console.log("error submit!!");
+          console.log("表单验证未通过");
           return false;
         }
       });
     },
+
     getOtherQuery(query) {
       return Object.keys(query).reduce((acc, cur) => {
         if (cur !== "redirect") {
@@ -200,25 +216,8 @@ export default {
         }
         return acc;
       }, {});
-    },
-    // afterQRScan() {
-    //   if (e.key === 'x-admin-oauth-code') {
-    //     const code = getQueryObject(e.newValue)
-    //     const codeMap = {
-    //       wechat: 'code',
-    //       tencent: 'code'
-    //     }
-    //     const type = codeMap[this.auth_type]
-    //     const codeName = code[type]
-    //     if (codeName) {
-    //       this.$store.dispatch('LoginByThirdparty', codeName).then(() => {
-    //         this.$router.push({ path: this.redirect || '/' })
-    //       })
-    //     } else {
-    //       alert('第三方登录失败')
-    //     }
-    //   }
-    // }
+    }
+    ,
   },
 };
 </script>
@@ -291,6 +290,7 @@ $light_gray: #eee;
     margin: 0 auto;
     overflow: hidden;
   }
+
   .tips {
     font-size: 14px;
     color: #fff;
@@ -313,6 +313,7 @@ $light_gray: #eee;
 
   .title-container {
     position: relative;
+
     .top_title {
       font-size: 42px;
       color: $light_gray;
@@ -321,8 +322,10 @@ $light_gray: #eee;
       font-weight: bold;
     }
   }
+
   .bottom-title-container {
     position: relative;
+
     .title {
       font-size: 34px;
       color: $light_gray;
