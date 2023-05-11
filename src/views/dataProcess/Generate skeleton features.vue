@@ -31,22 +31,109 @@
       </div>
     </div>
     <div class="component-item tip-button">
-      <el-button v-waves type="primary">
+      <el-button v-waves type="primary" @click="dialogTableVisible = true">
         上传手语视频
       </el-button>
     </div>
     <div class="linear-container">
+      <el-table v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%">
+        <el-table-column align="center" label="视频id" width="80">
+          <template slot-scope="{row}">
+            <span>{{ row.id }}</span>
+          </template>
+        </el-table-column>
 
+        <el-table-column width="180px" align="center" label="上传日期">
+          <template slot-scope="{row}">
+            <span>{{ row.timestamp | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column width="120px" align="center" label="视频名称">
+          <template slot-scope="{row}">
+            <span>{{ row.author }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column min-width="300px" label="视频描述">
+          <template slot-scope="{row}">
+            <template v-if="row.edit">
+              <el-input v-model="row.title" class="edit-input" size="small"/>
+              <el-button
+                class="cancel-btn"
+                size="small"
+                icon="el-icon-refresh"
+                type="warning"
+                @click="cancelEdit(row)"
+              >
+                cancel
+              </el-button>
+            </template>
+            <span v-else>{{ row.title }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column class-name="status-col" label="状态" width="110">
+          <template slot-scope="{row}">
+            <el-tag :type="row.status | statusFilter">
+              {{ row.status }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column align="center" label="操作" width="120">
+          <template slot-scope="{row}">
+            <el-button
+              v-if="row.edit"
+              type="success"
+              size="small"
+              icon="el-icon-circle-check-outline"
+              @click="confirmEdit(row)"
+            >
+              Ok
+            </el-button>
+            <el-button
+              v-else
+              type="primary"
+              size="small"
+              icon="el-icon-edit"
+              @click="row.edit=!row.edit"
+            >
+              Edit
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
+    <el-dialog v-el-drag-dialog :visible.sync="dialogTableVisible" title="Shipping address" @dragDialog="handleDrag">
+      <el-select ref="select" v-model="value" placeholder="请选择">
+        <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
+      </el-select>
+      <el-table :data="gridData">
+        <el-table-column property="date" label="Date" width="150" />
+        <el-table-column property="name" label="Name" width="200" />
+        <el-table-column property="address" label="Address" />
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
 import processImg from '@/views/dataProcess/components/source/img1.png';
-
+import {fetchList} from '@/api/article'
+import elDragDialog from '@/directive/el-drag-dialog' // base on element-ui
 export default {
   name: 'Generate skeleton features',
+  directives: {elDragDialog},
+  filters: {
+    statusFilter(status) {
+      const statusMap = {
+        published: 'success',
+        draft: 'info',
+        deleted: 'danger'
+      }
+      return statusMap[status]
+    }
+  },
   data() {
     return {
       fileSelected: false,
@@ -56,9 +143,46 @@ export default {
       showDownloadButton: false,
       downloadUrl: '',
       processImg: processImg,
+      list: null,
+      listLoading: true,
+      listQuery: {
+        page: 1,
+        limit: 10
+      },
+      dialogTableVisible: false,
+      options: [
+        { value: '选项1', label: '黄金糕' },
+        { value: '选项2', label: '双皮奶' },
+        { value: '选项3', label: '蚵仔煎' },
+        { value: '选项4', label: '龙须面' }
+      ],
+      value: '',
+      gridData: [{
+        date: '2016-05-02',
+        name: 'John Smith',
+        address: 'No.1518,  Jinshajiang Road, Putuo District'
+      }, {
+        date: '2016-05-04',
+        name: 'John Smith',
+        address: 'No.1518,  Jinshajiang Road, Putuo District'
+      }, {
+        date: '2016-05-01',
+        name: 'John Smith',
+        address: 'No.1518,  Jinshajiang Road, Putuo District'
+      }, {
+        date: '2016-05-03',
+        name: 'John Smith',
+        address: 'No.1518,  Jinshajiang Road, Putuo District'
+      }]
     }
   },
+  created() {
+    this.getList()
+  },
   methods: {
+    handleDrag() {
+      this.$refs.select.blur()
+    },
     onFileChange(e) {
       const file = e.target.files[0];
       this.fileName = file.name;
@@ -82,6 +206,33 @@ export default {
     clearFile() {
       this.fileSelected = false;
       this.fileName = '';
+    },
+    async getList() {
+      this.listLoading = true
+      const {data} = await fetchList(this.listQuery)
+      const items = data.items
+      this.list = items.map(v => {
+        this.$set(v, 'edit', false) // https://vuejs.org/v2/guide/reactivity.html
+        v.originalTitle = v.title //  will be used when user click the cancel botton
+        return v
+      })
+      this.listLoading = false
+    },
+    cancelEdit(row) {
+      row.title = row.originalTitle
+      row.edit = false
+      this.$message({
+        message: 'The title has been restored to the original value',
+        type: 'warning'
+      })
+    },
+    confirmEdit(row) {
+      row.edit = false
+      row.originalTitle = row.title
+      this.$message({
+        message: 'The title has been edited',
+        type: 'success'
+      })
     }
   }
 }
@@ -152,4 +303,15 @@ export default {
   margin: 20px 0 10px 30px;
   font-size: larger;
 }
+
+.edit-input {
+  padding-right: 100px;
+}
+
+.cancel-btn {
+  position: absolute;
+  right: 15px;
+  top: 10px;
+}
+
 </style>
