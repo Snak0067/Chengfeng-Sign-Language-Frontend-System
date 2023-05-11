@@ -153,24 +153,6 @@ export default {
     // window.removeEventListener('storage', this.afterQRScan)
   },
   methods: {
-    // 登录提交
-    async loginSubmit(loginForm) {
-      try {
-        await this.$refs[loginForm].validate();
-        const response = await axios.post('http://127.0.0.1:8000/login/', JSON.stringify(this.loginForm), {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        localStorage.setItem('token', response.data.token);
-        this.$router.push({path: this.redirect || '/', query: this.otherQuery})
-        this.loading = false
-        console.log("登录成功");
-      } catch (error) {
-        console.log(error);
-      }
-    },
-
     checkCapslock(e) {
       const {key} = e;
       this.capsTooltip = key && key.length === 1 && key >= "A" && key <= "Z";
@@ -187,28 +169,40 @@ export default {
       });
     },
     handleLogin() {
-      this.$refs.loginForm.validate((valid) => {
+      this.$refs.loginForm.validate(valid => {
         if (valid) {
-          this.loading = true;
+          this.loading = true
           axios.post('http://127.0.0.1:8000/login/', this.loginForm)
             .then(response => {
               // 登录成功后的处理
-              localStorage.setItem('token', response.data.token);
-              this.$router.push('/home');
-              this.loading = false;
+              //将token设置到缓存中
+              localStorage.setItem('token', response.data.data.token);
+              //再用这个贼傻逼的路由自己弄一遍
+              this.$store.dispatch('user/login', this.loginForm)
+                .then(() => {
+                  this.$router.push({path: this.redirect || '/', query: this.otherQuery})
+                })
+                .catch(() => {
+                  this.loading = false
+                })
+              //登陆成功
+              this.loading = false
+              console.log(response.data.message);
+              alert(response.data.message)
             })
             .catch(error => {
               // 登录失败后的处理
               console.log(error);
+              alert('登陆失败！')
               this.loading = false;
             });
-        } else {
-          console.log("表单验证未通过");
-          return false;
-        }
-      });
-    },
 
+        } else {
+          alert('错误的输入！')
+          return false
+        }
+      })
+    },
     getOtherQuery(query) {
       return Object.keys(query).reduce((acc, cur) => {
         if (cur !== "redirect") {

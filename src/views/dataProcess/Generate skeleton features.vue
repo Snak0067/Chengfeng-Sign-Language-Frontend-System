@@ -31,7 +31,7 @@
       </div>
     </div>
     <div class="component-item tip-button">
-      <el-button v-waves type="primary" @click="dialogTableVisible = true">
+      <el-button v-waves type="primary" @click="dialogOfUpload = true">
         上传手语视频
       </el-button>
     </div>
@@ -103,17 +103,40 @@
         </el-table-column>
       </el-table>
     </div>
-    <el-dialog v-el-drag-dialog :visible.sync="dialogTableVisible" title="上传手语视频" @dragDialog="handleDrag">
+    <div>
+      <el-dialog v-el-drag-dialog :visible.sync="dialogOfUpload" title="上传手语视频" @dragDialog="handleDrag">
+        <div>
+          <el-form :model="videoText" :rules="videoTextRules">
+            <el-form-item prop="title">
+              <md-input icon="el-icon-search" v-model="videoText.videoName"
+                        name="videoName" placeholder="手语视频名称">
+                手语视频名称
+              </md-input>
+            </el-form-item>
+            <el-form-item prop="title">
+              <md-input icon="el-icon-search" v-model="videoText.videoDescribe"
+                        name="videoDescribe" placeholder="手语视频描述">
+                手语视频描述
+              </md-input>
+            </el-form-item>
+          </el-form>
+        </div>
+        <!-- 上传对话框 -->
+        <div class="upload-box">
+          <el-upload class="upload-demo" action="#" drag multiple :headers="headers" :auto-upload="false"
+                     :file-list="fileList" :on-change="handleChange">
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+            <div class="el-upload__tip" slot="tip">上传 mp4 格式文件</div>
+          </el-upload>
+        </div>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="dialogOfUpload = false">取 消</el-button>
+          <el-button type="primary" @click="confirmUpload()">上 传</el-button>
+        </div>
 
-      <el-select ref="select" v-model="value" placeholder="请选择">
-        <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
-      </el-select>
-      <el-table :data="gridData">
-        <el-table-column property="date" label="Date" width="150" />
-        <el-table-column property="name" label="Name" width="200" />
-        <el-table-column property="address" label="Address" />
-      </el-table>
-    </el-dialog>
+      </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -121,9 +144,13 @@
 import axios from 'axios';
 import processImg from '@/views/dataProcess/components/source/img1.png';
 import {fetchList} from '@/api/article'
-import elDragDialog from '@/directive/el-drag-dialog' // base on element-ui
+import elDragDialog from '@/directive/el-drag-dialog'
+import MdInput from "@/components/MDinput/index.vue"; // base on element-ui
+import editorImage from '@/components/Tinymce/components/EditorImage.vue'
+
 export default {
   name: 'Generate skeleton features',
+  components: {MdInput, editorImage},
   directives: {elDragDialog},
   filters: {
     statusFilter(status) {
@@ -136,27 +163,27 @@ export default {
     }
   },
   data() {
+    const validate = (rule, value, callback) => {
+      if (value.length > 2) {
+        callback(new Error('请输入至少2个字符'))
+      } else {
+        callback()
+      }
+    }
     return {
-      fileSelected: false,
-      fileName: '',
-      showProgressBar: false,
-      progressBarWidth: '0%',
-      showDownloadButton: false,
-      downloadUrl: '',
+      fileList: [],
+      videoText: {
+        videoName: '',
+        videoDescribe: '',
+      },
+      videoTextRules: {
+        videoName: [{required: true, trigger: 'change', validator: validate}],
+        videoDescribe: [{required: true, trigger: 'change', validator: validate}]
+      },
       processImg: processImg,
       list: null,
       listLoading: true,
-      listQuery: {
-        page: 1,
-        limit: 10
-      },
-      dialogTableVisible: false,
-      options: [
-        { value: '选项1', label: '黄金糕' },
-        { value: '选项2', label: '双皮奶' },
-        { value: '选项3', label: '蚵仔煎' },
-        { value: '选项4', label: '龙须面' }
-      ],
+      dialogOfUpload: false,
       value: '',
     }
   },
@@ -164,36 +191,34 @@ export default {
     this.getList()
   },
   methods: {
+    handleChange(file, fileList) { //文件数量改变
+      this.fileList = fileList;
+    },
     handleDrag() {
       this.$refs.select.blur()
     },
-    onFileChange(e) {
-      const file = e.target.files[0];
-      this.fileName = file.name;
-      this.fileSelected = true;
-      this.showProgressBar = true;
-      const data = new FormData();
-      data.append('file', file);
-      axios.post('/api/skeleton-separation', data, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        onUploadProgress: (progressEvent) => {
-          this.progressBarWidth = `${Math.round((progressEvent.loaded * 100) / progressEvent.total)}%`;
-        }
-      }).then(response => {
-        this.showProgressBar = false;
-        this.showDownloadButton = true;
-        this.downloadUrl = response.data.url;
+    upload() {
+      const videoFileData = new FormData();
+      this.fileList.forEach(file => {
+        videoFileData.append('file', file.raw);
       });
-    },
-    clearFile() {
-      this.fileSelected = false;
-      this.fileName = '';
+      axios.post('http://127.0.0.1:8000/uploadVideo/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        }
+      })
+        .then(response => {
+          console.log(response);
+        })
+        .catch(error => {
+          console.log(error);
+        });
     },
     async getList() {
       this.listLoading = true
-      const {data} = await fetchList(this.listQuery)
+      const token = localStorage.getItem('token');
+      const {data} = await fetchList()
       const items = data.items
       this.list = items.map(v => {
         this.$set(v, 'edit', false) // https://vuejs.org/v2/guide/reactivity.html
@@ -296,6 +321,12 @@ export default {
   position: absolute;
   right: 15px;
   top: 10px;
+}
+
+.upload-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 </style>

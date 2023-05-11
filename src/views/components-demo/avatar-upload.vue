@@ -9,7 +9,7 @@
       it, it is better to use official version.
     </aside>
 
-    <pan-thumb :image="image"/>
+    <pan-thumb :image="image" />
 
     <el-button
       type="primary"
@@ -32,7 +32,7 @@
     />
     <div class="submit-div">
       <form @submit.prevent="onSubmit">
-        <input type="file" name="file" ref="fileInput"/>
+        <input type="file" name="file" ref="fileInput" />
         <button type="submit">Upload</button>
       </form>
     </div>
@@ -43,11 +43,11 @@
 import ImageCropper from "@/components/ImageCropper";
 import PanThumb from "@/components/PanThumb";
 import axios from "axios";
-import {uploadVideos} from "@/api/avatar-upload";
+import { uploadVideos } from "@/api/avatar-upload";
 
 export default {
   name: "AvatarUploadDemo",
-  components: {ImageCropper, PanThumb},
+  components: { ImageCropper, PanThumb },
   data() {
     return {
       imagecropperShow: false,
@@ -75,7 +75,7 @@ export default {
         })
         .then((response) => {
           // 清理上传的文件
-          this.image = null;
+          document.getElementById("file-input").value = null;
           // 弹窗上传成功
           alert("上传成功");
           console.log(response.data);
@@ -94,7 +94,6 @@ export default {
   height: 200px;
   border-radius: 50%;
 }
-
 .submit-div {
   margin: 20px;
 }
