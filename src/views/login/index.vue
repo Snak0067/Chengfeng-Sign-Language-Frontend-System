@@ -188,12 +188,21 @@ export default {
               //登陆成功
               this.loading = false
               console.log(response.data.message);
-              alert(response.data.message)
+              this.$notify({
+                title: 'Success',
+                message: '登陆成功！！',
+                type: 'success',
+                duration: 2000
+              })
             })
             .catch(error => {
               // 登录失败后的处理
-              console.log(error);
-              alert('登陆失败！',error)
+              this.$notify({
+                title: 'Failed',
+                message: '登陆失败，请重试',
+                type: 'error',
+                duration: 2000
+              })
               this.loading = false;
             });
 

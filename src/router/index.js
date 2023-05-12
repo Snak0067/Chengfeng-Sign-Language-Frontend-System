@@ -56,6 +56,18 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/video',
+    component: Layout,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/video/index'),
+        name: 'videoIndex',
+        meta: {title: '我的手语视频', icon: 'component', affix: true}
+      }
+    ]
+  },
+  {
     path: '/dataProcess',
     component: Layout,
     redirect: '/dataProcess/usage', // 重定向地址，在面包屑中点击会重定向去的地址
