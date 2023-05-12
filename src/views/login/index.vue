@@ -193,7 +193,7 @@ export default {
             .catch(error => {
               // 登录失败后的处理
               console.log(error);
-              alert('登陆失败！')
+              alert('登陆失败！',error)
               this.loading = false;
             });
 

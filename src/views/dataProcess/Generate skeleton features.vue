@@ -14,17 +14,17 @@
           <div class="tip-process-blocks">
             <div class="tip-process-block">
               <div class="tip-process-block-title">1 上传手语视频</div>
-              <div class="tip-process-block-content">点击“创建标签组”按钮，根据需要输入标签组名称和描述。</div>
+              <div class="tip-process-block-content">点击下方手语视频上传，上传至数据库中</div>
             </div>
             <div class="tip-process-block">
-              <div class="tip-process-block-title">2 管理标签组</div>
+              <div class="tip-process-block-title">2 生成骨架特征</div>
               <div class="tip-process-block-content">
-                支持手动或批量“添加/删除/修改”标签，您可上传csv、xls、txt格式文件批量添加标签。
+                支持手动或批量“添加/删除/修改”标签，您批量修改手语视频标签，然后通过生成的按钮将上传的视频进行提取骨架特征
               </div>
             </div>
             <div class="tip-process-block">
-              <div class="tip-process-block-title">3 调用标签组</div>
-              <div class="tip-process-block-content">在线标注数据时，您可一键导入“标签组”，使用组内标签进行标注。</div>
+              <div class="tip-process-block-title">3 下载骨架特征文件</div>
+              <div class="tip-process-block-content">完成骨架特征提取后，您可以下载该特征进行手动微调或者进行保存。</div>
             </div>
           </div>
         </div>
@@ -45,17 +45,25 @@
 
         <el-table-column width="180px" align="center" label="上传日期">
           <template slot-scope="{row}">
-            <span>{{ row.timestamp | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+            <span>{{ row.create_time }}</span>
           </template>
         </el-table-column>
-
-        <el-table-column width="120px" align="center" label="视频名称">
+        <el-table-column width="220px" align="center" label="视频名称">
           <template slot-scope="{row}">
-            <span>{{ row.author }}</span>
+            <span>{{ row.videoName }}</span>
           </template>
         </el-table-column>
-
-        <el-table-column min-width="300px" label="视频描述">
+        <el-table-column width="120px" align="center" label="视频标题">
+          <template slot-scope="{row}">
+            <span>{{ row.title }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column width="100px" align="center" label="缩略图">
+          <template slot-scope="{row}">
+            <img :src="'data:image/jpeg;base64,' +row.img" alt="缩略图" style="max-width: 50px; max-height: 50px;">
+          </template>
+        </el-table-column>
+        <el-table-column min-width="200px" label="视频描述">
           <template slot-scope="{row}">
             <template v-if="row.edit">
               <el-input v-model="row.title" class="edit-input" size="small"/>
@@ -69,9 +77,10 @@
                 cancel
               </el-button>
             </template>
-            <span v-else>{{ row.title }}</span>
+            <span v-else>{{ row.description }}</span>
           </template>
         </el-table-column>
+
         <el-table-column class-name="status-col" label="状态" width="110">
           <template slot-scope="{row}">
             <el-tag :type="row.status | statusFilter">
@@ -269,8 +278,8 @@ export default {
       }
 
       const {data} = await videolist()
-      console.log(data)
-      const items = data.items
+      console.log(data.data.videolist)
+      const items = data.data.videolist
       this.list = items.map(v => {
         this.$set(v, 'edit', false) // https://vuejs.org/v2/guide/reactivity.html
         v.originalTitle = v.title //  will be used when user click the cancel botton
