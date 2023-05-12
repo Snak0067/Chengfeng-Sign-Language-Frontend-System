@@ -36,6 +36,9 @@
       </el-button>
     </div>
     <div class="linear-container">
+      <div class="tip-div">
+        <span class="tip-span">提取全身骨骼特征的视频列表</span>
+      </div>
       <el-table v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%">
         <el-table-column align="center" label="视频id" width="80">
           <template slot-scope="{row}">
@@ -65,19 +68,7 @@
         </el-table-column>
         <el-table-column min-width="200px" label="视频描述">
           <template slot-scope="{row}">
-            <template v-if="row.edit">
-              <el-input v-model="row.title" class="edit-input" size="small"/>
-              <el-button
-                class="cancel-btn"
-                size="small"
-                icon="el-icon-refresh"
-                type="warning"
-                @click="cancelEdit(row)"
-              >
-                cancel
-              </el-button>
-            </template>
-            <span v-else>{{ row.description }}</span>
+            <span>{{ row.description }}</span>
           </template>
         </el-table-column>
 
@@ -88,26 +79,16 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column align="center" label="操作" width="120">
+        <el-table-column align="center" label="操作" width="130px">
           <template slot-scope="{row}">
-            <el-button
-              v-if="row.edit"
-              type="success"
-              size="small"
-              icon="el-icon-circle-check-outline"
-              @click="confirmEdit(row)"
-            >
-              Ok
+            <el-button v-if="row.show_extract_button" type="primary" size="small" icon="el-icon-edit"
+                       @click="extracting_whole_body_bone_features(row)">
+              分离特征
             </el-button>
-            <el-button
-              v-else
-              type="primary"
-              size="small"
-              icon="el-icon-edit"
-              @click="row.edit=!row.edit"
-            >
-              Edit
+            <el-button v-else type="success" size="small" icon="el-icon-success">
+              已完成
             </el-button>
+
           </template>
         </el-table-column>
       </el-table>
@@ -127,6 +108,12 @@
                         name="videoDescribe" placeholder="手语视频描述">
                 手语视频描述
               </md-input>
+            </el-form-item>
+            <el-form-item label="手语视频类型" prop="type">
+              <el-select v-model="videoText.videoType" class="filter-item" placeholder="Please select">
+                <el-option v-for="item in videoTypeOptions" :key="item.key" :label="item.display_name"
+                           :value="item.key"/>
+              </el-select>
             </el-form-item>
           </el-form>
         </div>
@@ -150,6 +137,11 @@
         </div>
 
       </el-dialog>
+      <!--      算法加载进度条   -->
+      <el-dialog :visible.sync="showProgress" :before-close="handleProgressClose">
+        <el-progress :percentage="progressPercentage"></el-progress>
+      </el-dialog>
+
     </div>
   </div>
 </template>
@@ -162,6 +154,10 @@ import elDragDialog from '@/directive/el-drag-dialog'
 import MdInput from "@/components/MDinput/index.vue"; // base on element-ui
 import editorImage from '@/components/Tinymce/components/EditorImage.vue'
 
+const videoTypeOptions = [
+  {key: 'AUSTL', display_name: '土耳其手语数据集'},
+  {key: 'WLASL', display_name: '美国手语数据集'},
+]
 export default {
   name: 'Generate skeleton features',
   components: {MdInput, editorImage},
@@ -169,9 +165,9 @@ export default {
   filters: {
     statusFilter(status) {
       const statusMap = {
-        published: 'success',
-        draft: 'info',
-        deleted: 'danger'
+        '已提取特征': 'success',
+        '': 'info',
+        '未提取特征': 'danger'
       }
       return statusMap[status]
     }
@@ -185,11 +181,16 @@ export default {
       }
     }
     return {
+      showProgress: false, // 是否显示进度条弹窗
+      progressPercentage: 0, // 进度条百分比
+      show_extract_button: true,
       fileList: [],
       videoText: {
         videoName: '',
         videoDescribe: '',
+        videoType: '',
       },
+      videoTypeOptions,
       videoTextRules: {
         videoName: [{required: true, trigger: 'change', validator: validate}],
         videoDescribe: [{required: true, trigger: 'change', validator: validate}]
@@ -221,7 +222,7 @@ export default {
       });
       formData.append('videoName', this.videoText.videoName);
       formData.append('videoDescribe', this.videoText.videoDescribe);
-      console.log(formData)
+      formData.append('videoType', this.videoText.videoType);
       axios.post('http://127.0.0.1:8000/uploadVideo/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -230,13 +231,16 @@ export default {
       })
         .then(response => {
           if (response.status === 200) {
-            alert('上传成功!')
+            this.$message({
+              message: '上传成功!',
+              type: 'success'
+            });
             this.videoText.videoName = ''
             this.videoText.videoDescribe = ''
             this.fileList = []
             this.dialogOfUpload = false
-            console.log(response);
           }
+          this.getList()
 
         })
         .catch(error => {
@@ -278,13 +282,7 @@ export default {
       }
 
       const {data} = await videolist()
-      console.log(data.data.videolist)
-      const items = data.data.videolist
-      this.list = items.map(v => {
-        this.$set(v, 'edit', false) // https://vuejs.org/v2/guide/reactivity.html
-        v.originalTitle = v.title //  will be used when user click the cancel botton
-        return v
-      })
+      this.list = data.data.videolist
       this.listLoading = false
     },
     cancelEdit(row) {
@@ -295,13 +293,50 @@ export default {
         type: 'warning'
       })
     },
-    confirmEdit(row) {
-      row.edit = false
-      row.originalTitle = row.title
-      this.$message({
-        message: 'The title has been edited',
-        type: 'success'
+    handleProgressClose() {
+      this.progressPercentage = 0
+    },
+    extracting_whole_body_bone_features(row) {
+      // this.listLoading = true
+      // 显示进度条弹窗
+      this.showProgress = true
+      let progress = 0
+      const timer = setInterval(() => {
+        progress += Math.floor(Math.random() * 4) + 1
+        if (progress > 95) {
+          clearInterval(timer)
+          return
+        }
+        this.progressPercentage = progress
+      }, 700)
+      axios.post('http://127.0.0.1:8000/extract_wholepose/', row, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
       })
+        .then(response => {
+          if (response.status === 200) {
+            this.$message({
+              message: '生成全身姿态估计成功!',
+              type: 'success'
+            });
+          }
+          this.getList()
+          this.listLoading = false
+          // 关闭进度条弹窗
+          this.showProgress = false
+        })
+        .catch(error => {
+          this.$message({
+            message: '生成全身姿态估计失败，请重试...',
+            type: 'error'
+          })
+          this.listLoading = false
+          // 关闭进度条弹窗
+          this.showProgress = false
+        });
+      this.handleProgressClose()
     }
   }
 }
@@ -310,6 +345,19 @@ export default {
 <style scoped>
 .local-container {
   background: #F7F7F9;
+}
+
+.tip-div {
+  margin: 0 20px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tip-span {
+  font-size: larger;
+  color: #09356c;
+  letter-spacing: 0.1em;
 }
 
 .linear-container {

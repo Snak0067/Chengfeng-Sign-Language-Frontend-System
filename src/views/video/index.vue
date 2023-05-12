@@ -5,7 +5,7 @@
                 @keyup.enter.native="handleFilter"/>
 
       <el-select v-model="listQuery.type" placeholder="数据集类型" clearable class="filter-item" style="width: 130px">
-        <el-option v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name+'('+item.key+')'"
+        <el-option v-for="item in videoTypeOptions" :key="item.key" :label="item.display_name+'('+item.key+')'"
                    :value="item.key"/>
       </el-select>
       <el-select v-model="listQuery.sort" style="width: 180px" class="filter-item" @change="handleFilter">
@@ -110,7 +110,7 @@
         </el-form-item>
         <el-form-item label="视频类型">
           <el-select v-model="videoInfo.videoType" class="filter-item" placeholder="Please select">
-            <el-option v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name"
+            <el-option v-for="item in videoTypeOptions" :key="item.key" :label="item.display_name"
                        :value="item.key"/>
           </el-select>
         </el-form-item>
@@ -158,13 +158,13 @@ import {MessageBox} from 'element-ui';
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
 import axios from 'axios';
 
-const calendarTypeOptions = [
+const videoTypeOptions = [
   {key: 'AUSTL', display_name: '土耳其手语数据集'},
   {key: 'WLASL', display_name: '美国手语数据集'},
 ]
 
 // arr to obj, such as { CN : "China", US : "USA" }
-const calendarTypeKeyValue = calendarTypeOptions.reduce((acc, cur) => {
+const calendarTypeKeyValue = videoTypeOptions.reduce((acc, cur) => {
   acc[cur.key] = cur.display_name
   return acc
 }, {})
@@ -176,9 +176,9 @@ export default {
   filters: {
     statusFilter(status) {
       const statusMap = {
-        published: 'success',
-        draft: 'info',
-        deleted: 'danger'
+        '已提取特征': 'success',
+        '未提取特征': 'info',
+        '': 'danger'
       }
       return statusMap[status]
     },
@@ -200,7 +200,7 @@ export default {
         sort: 'id'
       },
       importanceOptions: [1, 2, 3],
-      calendarTypeOptions,
+      videoTypeOptions,
       sortOptions: [{label: '视频id正序排列', key: 'id'}, {label: '视频id逆序排列', key: '-id'}],
       statusOptions: ['published', 'draft', 'deleted'],
       showReviewer: false,

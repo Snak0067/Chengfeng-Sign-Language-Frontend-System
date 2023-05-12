@@ -4,7 +4,7 @@
 
 <script>
 export default {
-  name: "signProcessing"
+  name: "Generate rgb frames"
 }
 </script>
 
