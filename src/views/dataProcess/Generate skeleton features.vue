@@ -66,7 +66,7 @@
             <img :src="'data:image/jpeg;base64,' +row.img" alt="缩略图" style="max-width: 50px; max-height: 50px;">
           </template>
         </el-table-column>
-        <el-table-column min-width="200px" label="视频描述">
+        <el-table-column min-width="180px" label="视频描述">
           <template slot-scope="{row}">
             <span>{{ row.description }}</span>
           </template>
@@ -79,14 +79,14 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column align="center" label="操作" width="130px">
+        <el-table-column align="center" label="操作" width="150px">
           <template slot-scope="{row}">
             <el-button v-if="row.show_extract_button" type="primary" size="small" icon="el-icon-edit"
                        @click="extracting_whole_body_bone_features(row)">
               分离特征
             </el-button>
-            <el-button v-else type="success" size="small" icon="el-icon-success">
-              已完成
+            <el-button v-else type="success" size="small" icon="el-icon-success" @click="download_features_files(row)">
+              下载特征
             </el-button>
 
           </template>
@@ -295,6 +295,45 @@ export default {
     },
     handleProgressClose() {
       this.progressPercentage = 0
+    },
+    download_features_files(row) {
+      this.$confirm('是否下载该视频的特征文件', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        axios.post('http://127.0.0.1:8000/download_wholePose_file/', row, {
+          responseType: 'blob',  // 指定响应数据类型为 blob
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          }
+        }).then(response => {
+          const filename = 'wholePose_' + row.videoName + '.txt';  // 下载的文件名，根据实际情况修改
+          const blob = new Blob([response.data]);
+          const link = document.createElement('a');
+          const objectUrl = URL.createObjectURL(blob);
+          link.href = objectUrl;
+          link.download = filename;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(objectUrl);
+          this.$message({
+            type: 'success',
+            message: '下载成功!'
+          });
+        }).catch(error => {
+          console.error('下载文件时发生错误:', error);
+          this.$message.error('下载文件时发生错误');
+        });
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消下载'
+        });
+      });
     },
     extracting_whole_body_bone_features(row) {
       // this.listLoading = true
