@@ -27,7 +27,9 @@
             </div>
             <div class="tip-process-block">
               <div class="tip-process-block-title">3 显示或保存帧</div>
-              <div class="tip-process-block-content">根据您的需求，可以将处理后的帧数据显示在屏幕上或将其保存为新的视频文件。</div>
+              <div class="tip-process-block-content">
+                根据您的需求，可以将处理后的帧数据显示在屏幕上或将其保存为新的视频文件。
+              </div>
             </div>
           </div>
         </div>
@@ -40,7 +42,7 @@
     </div>
     <div class="linear-container">
       <div class="tip-div">
-        <span class="tip-span">提取全身骨骼特征的视频列表</span>
+        <span class="tip-span">分离视频RGB帧的视频列表</span>
       </div>
       <el-table v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%">
         <el-table-column align="center" label="视频id" width="80">
@@ -410,14 +412,6 @@ export default {
   background: #fff;
   box-shadow: 0 0 7px rgba(73, 73, 73, 0.5);
   border-radius: 10px;
-}
-
-.tip-container {
-  /* margin: 30px; */
-}
-
-.tip-container-title1 {
-  font-size: small;
 }
 
 .tip-title {

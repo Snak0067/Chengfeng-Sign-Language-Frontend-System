@@ -17,13 +17,14 @@
       <div class="container-left">
         <div class="video-wrapper">
           <video ref="mainVideoPlayer" class="main-video" controls>
-            <source :src="this.videoList[0]" type="video/mp4">
+            <source :src="this.video.sourceUrls[0]" type="video/mp4">
           </video>
         </div>
         <div class="video-info">
           <div v-if="videoShowOptions.duration">
             <p>视频持续时间: {{ this.videoShowOptions.duration }} 秒</p>
             <p>视频帧数: {{ this.videoShowOptions.frames }} 帧</p>
+            <p>视频分辨率: {{ this.videoShowOptions.shape }} 像素</p>
           </div>
         </div>
         <div class="container-right-bottom">
@@ -36,7 +37,7 @@
           </div>
           <div class="thumbnails">
             <div
-              v-for="(thumbnail, index) in thumbnails"
+              v-for="(thumbnail, index) in video.imgUrls"
               :key="index"
               :class="{ 'selected-thumbnail': index === selectedThumbnailIndex }"
               class="thumbnail"
@@ -48,11 +49,54 @@
         </div>
       </div>
       <div class="container-right">
-        <div class="tip-title"></div>
-        <div class="select-input">
+        <div class="algorithm">
+          <div class="tip-title">
+            <el-text class="mx-1" size="small">设置</el-text>
+
+          </div>
+          <div class="select-block">
+            <div class="algorithm-title">算法</div>
+            <el-select class="select" v-model="algorithm" placeholder="请选择">
+              <el-option
+                v-for="item in algorithmOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value">
+              </el-option>
+            </el-select>
+          </div>
+          <div class="select-block">
+            <div class="algorithm-title">数据集</div>
+            <el-select class="select" v-model="dataset" placeholder="请选择">
+              <el-option
+                v-for="item in datasetOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value">
+              </el-option>
+            </el-select>
+          </div>
+          <div class="step">
+            <el-steps :active="active" finish-status="success" :space="250">
+              <el-step title="步骤 1" description="全身姿态估计"></el-step>
+              <el-step title="步骤 2" description="生成RGB帧"></el-step>
+              <el-step title="步骤 3" description="运行模型"></el-step>
+            </el-steps>
+            <el-button style="margin-top: 12px;" @click="next">
+              {{ activeDesc[active] }}
+            </el-button>
+            <el-divider></el-divider>
+          </div>
+          <div class="show-result">
+            <div class="show-result-title">前五名预测结果</div>
+            <div class="empty-img">
+              <img src="https://img.ixintu.com/download/jpg/20200726/fc0a376507f1116fd382240c13aa7699_512_512.jpg!ys"/>
+            </div>
+          </div>
+        </div>
+        <div>
 
         </div>
-        <div class="select-input"></div>
       </div>
     </div>
   </div>
@@ -72,29 +116,71 @@ export default {
   name: "index",
   data() {
     return {
+      active: 0,
+      algorithm: '',
+      activeDesc: [
+        '生成全身姿态估计',
+        '生成RGB帧',
+        '运行模型预测',
+        '成功！！！'
+      ],
+      dataset: '',
       topbar_bg: topbar_bg,
+      video: {
+        shape: [[320, 240], [288, 192], [640, 480]],
+        duration: [2.2, 1.2, 1.3],
+        frames: [64, 58, 34],
+        imgUrls: [thumbnail1, thumbnail2, thumbnail3],
+        sourceUrls: [video1, video2, video3],
+      },
       videoInfo: [[2, 64], [2, 58], [1, 34]],
       selectedThumbnailIndex: -1,
       videoShowOptions: {
         "duration": null,
         "frames": null,
+        "shape": null,
       },
       mainVideoPlayer: null,
       videoURL: '',
       currentVideo: '', // 当前播放的视频URL
-      thumbnails: [thumbnail1, thumbnail2, thumbnail3],
-      videoList: [video1, video2, video3],
       showTooltip: false,
       tooltipText: "1、首先，点击界面上的\"选择视频文件\"按钮，从您的计算机中选择一个视频文件\n" +
         "2、选取视频文件后，界面将显示视频的相关信息，例如持续时间和帧数\n" +
         "3、然后在右边设置要预测的模型和相关数据集\n" +
         "4、在设置完参数后，点击\"运行\"按钮开始手语识别预测",
+      algorithmOptions: [{
+        value: 'I3D',
+        label: 'I3D'
+      }, {
+        value: 'ResNet(2+1)D',
+        label: 'ResNet(2+1)D'
+      }, {
+        value: 'C3D',
+        label: 'C3D'
+      }],
+      datasetOptions: [
+        {
+          value: 'WLASL',
+          label: 'WLASL'
+        }, {
+          value: 'AUSTL',
+          label: 'AUSTL'
+        }, {
+          value: 'CSL',
+          label: 'CSL'
+        }
+      ]
     }
   },
   mounted() {
     this.mainVideoPlayer = this.$refs.mainVideoPlayer;
   },
   methods: {
+    next() {
+      if (this.active < 3) {
+        this.active++;
+      }
+    },
     validateVideoFile(file) {
       const allowedTypes = ["video/mp4", "video/mpeg", "video/quicktime"]; // 允许的视频文件类型，可以根据需要进行修改
       // 检查文件类型
@@ -124,22 +210,30 @@ export default {
     generateThumbnail(file) {
       const formData = new FormData();
       formData.append('videoFile', file);
-      axios.post('http://127.0.0.1:8000/get_video_cover/', formData)
-        .then(response => {
-          // 上传成功的处理逻辑
+      axios.post('http://127.0.0.1:8000/get_video_cover/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+      }).then(response => {
+        // 上传成功的处理逻辑
+        if (response.status === 200) {
           this.$message({
             message: '上传视频成功!',
             type: 'success'
           });
-          this.generateThumbnails(videoURL);
-        })
-        .catch(error => {
-          // 上传失败的处理逻辑
-          this.$message({
-            message: '网络错误,上传视频视频失败!',
-            type: 'error'
-          })
-        });
+          const videoInfo = response.data.data
+          this.pushVideo(videoInfo, file)
+        }
+      })
+    },
+    pushVideo(videoInfo, file) {
+      this.video.imgUrls.push('data:image/jpeg;base64,' + videoInfo.imageUrl)
+      this.video.sourceUrls.push(URL.createObjectURL(file));
+      this.video.duration.push(videoInfo.duration);
+      this.video.shape.push([videoInfo.width, videoInfo.height]);
+      this.video.frames.push(videoInfo.frame);
+
     },
     playVideo(file) {
       const videoURL = URL.createObjectURL(file);
@@ -151,25 +245,18 @@ export default {
       this.mainVideoPlayer.src = videoURL;
       this.mainVideoPlayer.load();
     },
-    generateThumbnails(videoURL) {
-      // 使用您选择的库或自定义方法生成视频缩略图
-      // 将缩略图的URL存储在this.thumbnails数组中
-      this.videoList.push(videoURL)
-
-      this.thumbnails.push(videoURL)
-    },
     switchVideo(index) {
       this.$message({
         message: '切换视频!',
         type: 'success'
       });
-      if (index < this.videoList.length) {
-        this.playVideoWithUrl(this.videoList[index]);
-        this.videoShowOptions.duration = this.videoInfo[index][0]
-        this.videoShowOptions.frames = this.videoInfo[index][1]
+      if (index < this.video.sourceUrls.length) {
+        this.playVideoWithUrl(this.video.sourceUrls[index]);
+        this.videoShowOptions.duration = this.video.duration[index]
+        this.videoShowOptions.frames = this.video.frames[index]
+        this.videoShowOptions.shape = this.video.shape[index][0] + " x " + this.video.shape[index][1]
         this.selectedThumbnailIndex = index
       }
-
     }
   }
 }
@@ -213,27 +300,10 @@ h1 {
   margin-bottom: 20px;
 }
 
-.upload-section {
-  margin-bottom: 20px;
-}
-
-.options-section {
-  margin-bottom: 20px;
-}
-
-.result-section {
-  background-color: #f9f9f9;
-  padding: 10px;
-  border-radius: 5px;
-}
-
 pre {
   white-space: pre-wrap;
 }
 
-.video-info {
-
-}
 
 .container-right-bottom {
   width: 640px;
@@ -324,7 +394,7 @@ pre {
   left: 40px;
   width: 400px;
   padding: 10px;
-  background-color: #626262;
+  background-color: #F6F6F6;
   color: #fff;
   font-size: 14px;
   border-radius: 5px;
@@ -346,5 +416,51 @@ pre {
   border: 10px solid transparent;
   border-bottom-color: #333;
 }
+
+
+.algorithm {
+  width: 640px;
+  background: rgba(241, 240, 240, 0.99);
+  padding: 20px;
+
+}
+
+.select-block {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.step {
+  margin-top: 24px;
+}
+
+.show-result {
+
+}
+
+.show-result-title {
+  margin: 10px 0;
+}
+
+.empty-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-img img {
+  width: 360px;
+  height: 300px;
+}
+
+.select {
+  width: 240px;
+}
+
+.algorithm-title {
+  width: 100px;
+}
+
 </style>
 
