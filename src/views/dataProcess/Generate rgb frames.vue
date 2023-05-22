@@ -2,29 +2,32 @@
   <div class="local-container">
     <div class="linear-container">
       <div class="tip-container">
-        <div class="tip-title">数据预处理——基于OpenMMLab的骨架关键点分离</div>
+        <div class="tip-title">数据预处理 ——— 生成RGB视频帧</div>
         <p class="tip-content">
-          本系统使用<a href="https://github.com/open-mmlab/mmpose" style="color: #0a76a4"> OpenMMLab pose estimation
-          tool-box and benchmark </a>
-          论文中提供的预训练HRNet全身姿势估计器从您上传RGB视频中估计手语表演者的133点全身关键点,提取出其中的关键骨骼点构建27节点骨架图
+          本界面展示了数据预处理部分从手语视频中提取RGB视频帧的算法功能
         </p>
+        <div>
+          <img class="mmpose_img" :src="rgb_frame" alt="人体姿态估计示例图">
+        </div>
         <div class="tip-process-title">使用流程介绍</div>
         <div class="tip-process-content">
           <img class="tip-process-img" :src="processImg" alt="流程图图片">
           <div class="tip-process-blocks">
             <div class="tip-process-block">
               <div class="tip-process-block-title">1 上传手语视频</div>
-              <div class="tip-process-block-content">点击下方手语视频上传，上传至数据库中</div>
-            </div>
-            <div class="tip-process-block">
-              <div class="tip-process-block-title">2 生成骨架特征</div>
               <div class="tip-process-block-content">
-                支持手动或批量“添加/删除/修改”标签，您批量修改手语视频标签，然后通过生成的按钮将上传的视频进行提取骨架特征
+                使用视频处理库（如OpenCV）读取视频文件。通过视频的路径或URL，打开视频文件并获取视频的基本信息，如帧率、分辨率等
               </div>
             </div>
             <div class="tip-process-block">
-              <div class="tip-process-block-title">3 下载骨架特征文件</div>
-              <div class="tip-process-block-content">完成骨架特征提取后，您可以下载该特征进行手动微调或者进行保存。</div>
+              <div class="tip-process-block-title">2 解码帧</div>
+              <div class="tip-process-block-content">
+                从视频中逐帧读取图像数据。视频处理库提供的函数可以帮助您逐帧解码视频帧
+              </div>
+            </div>
+            <div class="tip-process-block">
+              <div class="tip-process-block-title">3 显示或保存帧</div>
+              <div class="tip-process-block-content">根据您的需求，可以将处理后的帧数据显示在屏幕上或将其保存为新的视频文件。</div>
             </div>
           </div>
         </div>
@@ -148,11 +151,12 @@
 
 <script>
 import axios from 'axios';
-import processImg from '@/views/dataProcess/components/source/img1.png';
+import rgb_frame from '@/views/dataProcess/components/source/rgb_frame.png';
 import {fetchList} from '@/api/article'
 import elDragDialog from '@/directive/el-drag-dialog'
 import MdInput from "@/components/MDinput/index.vue"; // base on element-ui
 import editorImage from '@/components/Tinymce/components/EditorImage.vue'
+import processImg from "@/views/dataProcess/components/source/progress.png";
 
 const videoTypeOptions = [
   {key: 'AUSTL', display_name: '土耳其手语数据集'},
@@ -195,6 +199,7 @@ export default {
         videoName: [{required: true, trigger: 'change', validator: validate}],
         videoDescribe: [{required: true, trigger: 'change', validator: validate}]
       },
+      rgb_frame: rgb_frame,
       processImg: processImg,
       list: null,
       listLoading: true,
@@ -411,8 +416,11 @@ export default {
   /* margin: 30px; */
 }
 
+.tip-container-title1 {
+  font-size: small;
+}
+
 .tip-title {
-  margin-bottom: 10px;
   font-size: larger;
 }
 
@@ -421,7 +429,7 @@ export default {
   color: #7d7d7d;
   font-size: medium;
   margin-bottom: 30px;
-  width: 1000px;
+  width: 1200px;
 }
 
 .tip-process-title {
@@ -442,7 +450,7 @@ export default {
 }
 
 .tip-process-block {
-  width: 270px;
+  width: 300px;
   margin-right: 30px;
 }
 

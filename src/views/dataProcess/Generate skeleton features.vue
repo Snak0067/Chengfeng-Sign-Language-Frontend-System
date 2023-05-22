@@ -6,8 +6,12 @@
         <p class="tip-content">
           本系统使用<a href="https://github.com/open-mmlab/mmpose" style="color: #0a76a4"> OpenMMLab pose estimation
           tool-box and benchmark </a>
-          论文中提供的预训练HRNet全身姿势估计器从您上传RGB视频中估计手语表演者的133点全身关键点,提取出其中的关键骨骼点构建27节点骨架图
+          论文中提供的预训练HRNet全身姿势估计器从您上传RGB视频中估计手语表演者的133点全身关键点,提取出其中的关键骨骼点构建27节点骨架
+          ，通过利用预训练的姿势估计器估计全身关键点并根据关键点位置进行裁剪，以确保关键信息的保留并减少背景干扰.
         </p>
+        <div>
+          <img class="mmpose_img" :src="mmpose_img" alt="人体姿态估计示例图">
+        </div>
         <div class="tip-process-title">使用流程介绍</div>
         <div class="tip-process-content">
           <img class="tip-process-img" :src="processImg" alt="流程图图片">
@@ -149,7 +153,8 @@
 <script>
 import axios from 'axios';
 import processImg from '@/views/dataProcess/components/source/img1.png';
-import {fetchList} from '@/api/article'
+import mmpose_img from '@/views/dataProcess/components/source/mmpose.png';
+
 import elDragDialog from '@/directive/el-drag-dialog'
 import MdInput from "@/components/MDinput/index.vue"; // base on element-ui
 import editorImage from '@/components/Tinymce/components/EditorImage.vue'
@@ -196,6 +201,7 @@ export default {
         videoDescribe: [{required: true, trigger: 'change', validator: validate}]
       },
       processImg: processImg,
+      mmpose_img: mmpose_img,
       list: null,
       listLoading: true,
       dialogOfUpload: false,
@@ -265,9 +271,6 @@ export default {
       if (!['mp4', 'avi', 'mov'].includes(fileType)) {
         alert('只能上传 mp4、avi 或 mov 格式的视频');
         return false;
-      }
-      for (let i = 0; i < this.fileList; i++) {
-
       }
       return true;
     },
@@ -420,7 +423,6 @@ export default {
   line-height: 24px;
   color: #7d7d7d;
   font-size: medium;
-  margin-bottom: 30px;
   width: 1000px;
 }
 
@@ -433,6 +435,11 @@ export default {
   margin: 10px 0;
   height: 44px;
   width: 700px;
+}
+
+.mmpose_img {
+  height: 320px;
+  width: 730px;
 }
 
 .tip-process-blocks {

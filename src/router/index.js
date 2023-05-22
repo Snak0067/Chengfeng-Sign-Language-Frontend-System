@@ -195,6 +195,18 @@ export const constantRoutes = [
  * the routes that need to be dynamically loaded based on user roles
  */
 export const asyncRoutes = [
+  {
+    path: '/recognition',
+    component: Layout,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/recognition/index'),
+        name: 'Icons',
+        meta: {title: '手语识别', icon: 'nested', noCache: true}
+      }
+    ]
+  },
 
   {
     path: '/permission',

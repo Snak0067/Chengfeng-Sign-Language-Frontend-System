@@ -1,4 +1,6 @@
 import Vue from 'vue'
+import ElementUI from 'element-ui'; // 导入element-ui包
+import 'element-ui/lib/theme-chalk/index.css'; // 导入相关样式
 
 import Cookies from 'js-cookie'
 
@@ -29,10 +31,10 @@ import * as filters from './filters' // global filters
  * please remove it before going online ! ! !
  */
 if (process.env.NODE_ENV === 'production') {
-  const { mockXHR } = require('../mock')
+  const {mockXHR} = require('../mock')
   mockXHR()
 }
-
+Vue.use(ElementUI); // 引用
 Vue.use(Element, {
   size: Cookies.get('size') || 'medium', // set element-ui default size
   locale: enLang // 如果使用中文，无需设置，请删除
