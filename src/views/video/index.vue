@@ -75,8 +75,8 @@
       </el-table-column>
       <el-table-column class-name="status-col" label="状态" width="110">
         <template slot-scope="{row}">
-          <el-tag :type="row.status | statusFilter">
-            {{ row.status }}
+          <el-tag :type="row.whole_pose_status | statusFilter">
+            {{ row.whole_pose_status }}
           </el-tag>
         </template>
       </el-table-column>

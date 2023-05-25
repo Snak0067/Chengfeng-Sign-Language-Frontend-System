@@ -17,6 +17,7 @@
       <div class="container-left">
         <div class="video-wrapper">
           <video ref="mainVideoPlayer" class="main-video" controls>
+            <!--            <source :src="this.video.sourceUrls[0]" type="video/mp4">-->
             <source :src="this.video.sourceUrls[0]" type="video/mp4">
           </video>
         </div>
@@ -34,6 +35,7 @@
             <button class="inputUrlButton">Search</button>
             <div class="huo"> 或</div>
             <input type="file" @change="handleFileChange" accept="video/*"/>
+            <el-button type="danger" class="delete-button" @click="deleteVideo">删除视频</el-button>
           </div>
           <div class="thumbnails">
             <div
@@ -83,7 +85,7 @@
               <el-step title="步骤 3" description="运行模型"></el-step>
             </el-steps>
             <el-button style="margin-top: 12px;" @click="next">
-              {{ activeDesc[active] }}
+              {{ activeDesc[video.active[selectedThumbnailIndex]] }}
             </el-button>
             <el-divider></el-divider>
           </div>
@@ -95,6 +97,10 @@
           </div>
         </div>
         <div>
+          <!--      算法加载进度条   -->
+          <el-dialog :visible.sync="showProgress" :before-close="handleProgressClose">
+            <el-progress :percentage="progressPercentage"></el-progress>
+          </el-dialog>
 
         </div>
       </div>
@@ -116,15 +122,17 @@ export default {
   name: "index",
   data() {
     return {
+      showProgress: false, // 是否显示进度条弹窗
+      progressPercentage: 0, // 进度条百分比
       active: 0,
-      algorithm: '',
+      algorithm: 'I3D',
       activeDesc: [
         '生成全身姿态估计',
         '生成RGB帧',
         '运行模型预测',
         '成功！！！'
       ],
-      dataset: '',
+      dataset: 'WLASL',
       topbar_bg: topbar_bg,
       video: {
         shape: [[320, 240], [288, 192], [640, 480]],
@@ -132,9 +140,11 @@ export default {
         frames: [64, 58, 34],
         imgUrls: [thumbnail1, thumbnail2, thumbnail3],
         sourceUrls: [video1, video2, video3],
+        active: [],
+        videoId: [],
       },
       videoInfo: [[2, 64], [2, 58], [1, 34]],
-      selectedThumbnailIndex: -1,
+      selectedThumbnailIndex: 0,
       videoShowOptions: {
         "duration": null,
         "frames": null,
@@ -175,11 +185,178 @@ export default {
   mounted() {
     this.mainVideoPlayer = this.$refs.mainVideoPlayer;
   },
+  created() {
+    this.getAllVideoInfo()
+  },
   methods: {
     next() {
-      if (this.active < 3) {
-        this.active++;
+      if (!this.checkInfoNeeded()) {
+        return;
       }
+      const currentActive = this.video.active[this.selectedThumbnailIndex]
+      if (currentActive === 0) {
+        this.extractWholePose()
+      } else if (currentActive === 1) {
+        this.extractFrames()
+      } else {
+        this.predictVideo()
+      }
+    },
+    predictVideo() {
+      this.showProgress = true
+      let progress = 0
+      //进度条计时器
+      const timer = setInterval(() => {
+        progress += Math.floor(Math.random() * 3) + 2
+        if (progress > 90) {
+          clearInterval(timer)
+          return
+        }
+        this.progressPercentage = progress
+      }, 700)
+      //api
+      const info = {
+        "id": this.video.videoId[this.selectedThumbnailIndex]
+      }
+      axios.post('http://127.0.0.1:8000/prediction_video/', info, {
+        headers: {
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+      })
+        .then(response => {
+          if (response.status === 200) {
+            this.$message({
+              message: '预测视频成功!',
+              type: 'success'
+            });
+            console.log(response.data.data)
+            const idx = this.selectedThumbnailIndex
+            this.getAllVideoInfo()
+            this.selectedThumbnailIndex = idx
+          }
+        })
+        .catch(error => {
+          this.$message({
+            message: '预测视频失败，请重试...',
+            type: 'error'
+          })
+        });
+      this.handleProgressClose()
+    },
+    handleProgressClose() {
+      this.progressPercentage = 0
+      // 关闭进度条弹窗
+      this.showProgress = false
+    },
+    extractFrames() {
+      this.showProgress = true
+      let progress = 0
+      //进度条计时器
+      const timer = setInterval(() => {
+        progress += Math.floor(Math.random() * 8) + 5
+        if (progress > 95) {
+          clearInterval(timer)
+          return
+        }
+        this.progressPercentage = progress
+      }, 700)
+      //api
+      const info = {
+        "id": this.video.videoId[this.selectedThumbnailIndex]
+      }
+      axios.post('http://127.0.0.1:8000/recognition_video_to_frames/', info, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+      })
+        .then(response => {
+          if (response.status === 200) {
+            this.$message({
+              message: '生成RGB视频帧成功!',
+              type: 'success'
+            });
+            this.getAllVideoInfo()
+          }
+          // 关闭进度条弹窗
+          this.showProgress = false
+        })
+        .catch(error => {
+          this.$message({
+            message: '生成RGB视频帧失败，请重试...',
+            type: 'error'
+          })
+          // 关闭进度条弹窗
+          this.showProgress = false
+        });
+      this.handleProgressClose()
+    },
+    extractWholePose() {
+      // 显示进度条弹窗
+      this.showProgress = true
+      let progress = 0
+      const timer = setInterval(() => {
+        progress += Math.floor(Math.random() * 4) + 1
+        if (progress > 95) {
+          clearInterval(timer)
+          return
+        }
+        this.progressPercentage = progress
+      }, 700)
+      const info = {
+        "videoId": this.video.videoId[this.selectedThumbnailIndex]
+      }
+      axios.post('http://127.0.0.1:8000/recognition_get_wholePose/', info, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+      }).then(response => {
+        if (response.status === 200) {
+          this.$message({
+            message: '生成全身姿态估计成功!',
+            type: 'success'
+          });
+          // 关闭进度条弹窗
+          this.showProgress = false
+          this.getAllVideoInfo()
+        }
+      })
+        .catch(error => {
+          this.$message({
+            message: '生成全身姿态估计失败，请重试...',
+            type: 'error'
+          })
+
+          // 关闭进度条弹窗
+          this.showProgress = false
+        });
+      this.handleProgressClose()
+    },
+    checkInfoNeeded() {
+      // 进行上传前的文件的非空确认
+      if (!this.algorithm) {
+        this.$message({
+          message: '请选择算法',
+          type: 'error'
+        })
+        return false;
+      }
+      if (!this.dataset) {
+        this.$message({
+          message: '请选择所属的数据集',
+          type: 'error'
+        })
+        return false;
+      }
+      if (!this.mainVideoPlayer.src) {
+        this.$message({
+          message: '请选择识别的视频',
+          type: 'error'
+        })
+        return false;
+      }
+      return true
     },
     validateVideoFile(file) {
       const allowedTypes = ["video/mp4", "video/mpeg", "video/quicktime"]; // 允许的视频文件类型，可以根据需要进行修改
@@ -192,6 +369,32 @@ export default {
       const extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
       const allowedExtensions = ["mp4", "mpeg", "mov"]; // 允许的视频文件扩展名，可以根据需要进行修改
       return allowedExtensions.includes(extension);
+    },
+    deleteVideo() {
+      this.$confirm('此操作将永久删除该视频, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        const info = {
+          "videoId": this.video.videoId[this.selectedThumbnailIndex]
+        }
+        axios.post('http://127.0.0.1:8000/delete_recognition_video/', info, {}).then(response => {
+          this.getAllVideoInfo()
+          this.$message({
+            type: 'success',
+            message: '删除成功!'
+          });
+          this.getAllVideoInfo()
+          this.selectedThumbnailIndex = 0
+
+        })
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        });
+      });
     },
     handleFileChange(event) {
       const file = event.target.files[0];
@@ -222,18 +425,12 @@ export default {
             message: '上传视频成功!',
             type: 'success'
           });
-          const videoInfo = response.data.data
-          this.pushVideo(videoInfo, file)
+
+          this.getAllVideoInfo()
+          this.selectedThumbnailIndex = this.video.videoId.length
+
         }
       })
-    },
-    pushVideo(videoInfo, file) {
-      this.video.imgUrls.push('data:image/jpeg;base64,' + videoInfo.imageUrl)
-      this.video.sourceUrls.push(URL.createObjectURL(file));
-      this.video.duration.push(videoInfo.duration);
-      this.video.shape.push([videoInfo.width, videoInfo.height]);
-      this.video.frames.push(videoInfo.frame);
-
     },
     playVideo(file) {
       const videoURL = URL.createObjectURL(file);
@@ -256,7 +453,26 @@ export default {
         this.videoShowOptions.frames = this.video.frames[index]
         this.videoShowOptions.shape = this.video.shape[index][0] + " x " + this.video.shape[index][1]
         this.selectedThumbnailIndex = index
+        this.active = this.video.active[index]
       }
+    },
+    getAllVideoInfo() {
+      const formData = new FormData();
+      axios.post('http://127.0.0.1:8000/getAllVideoInfo/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+      }).then(response => {
+        // 上获取视频列表成功的处理逻辑
+        if (response.status === 200) {
+          this.$message({
+            message: '获取手语识别的视频列表成功!',
+            type: 'success'
+          });
+          this.video = response.data.data
+        }
+      })
     }
   }
 }
@@ -360,13 +576,14 @@ pre {
 
 .thumbnails {
   display: flex;
+  flex-wrap: wrap;
   margin: 10px 0;
   /*justify-content: center;*/
 }
 
 .thumbnail {
-  width: 120px;
-  height: 110px;
+  width: 110px;
+  height: 100px;
   margin-right: 10px;
   cursor: pointer;
 }
@@ -394,7 +611,7 @@ pre {
   left: 40px;
   width: 400px;
   padding: 10px;
-  background-color: #F6F6F6;
+  background-color: #1c1818;
   color: #fff;
   font-size: 14px;
   border-radius: 5px;
@@ -402,6 +619,15 @@ pre {
   pointer-events: none;
   transition: opacity 0.3s;
   white-space: pre-line;
+}
+
+.delete-button {
+  width: 90px;
+  height: 34px;
+  display: flex;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
 }
 
 .icon-tip-message {

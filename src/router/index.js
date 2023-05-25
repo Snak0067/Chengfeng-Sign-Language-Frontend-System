@@ -94,14 +94,6 @@ export const constantRoutes = [
         meta: {
           title: '生成RGB帧'
         }
-      },
-      {
-        path: 'Generate flow data',
-        component: () => import('@/views/dataProcess/Generate flow data.vue'),
-        name: 'Generate flow data',
-        meta: {
-          title: '生成流式数据'
-        }
       }
     ]
   },

@@ -40,6 +40,18 @@
         上传手语视频
       </el-button>
     </div>
+    <div>
+      <div class="block" v-if="imageUrls.length>0">
+        <div class="demonstration">RGB分割结果图片展示</div>
+        <el-carousel trigger="click" height="160px" class="sliding-windows">
+          <el-carousel-item v-for="imgRows in imageUrls" :key="imgRows" class="image-gallery">
+            <div class="image-item" v-for="image in imgRows" :key="image.id">
+              <img :src="image" alt="Image"/>
+            </div>
+          </el-carousel-item>
+        </el-carousel>
+      </div>
+    </div>
     <div class="linear-container">
       <div class="tip-div">
         <span class="tip-span">分离视频RGB帧的视频列表</span>
@@ -71,27 +83,27 @@
             <img :src="'data:image/jpeg;base64,' +row.img" alt="缩略图" style="max-width: 50px; max-height: 50px;">
           </template>
         </el-table-column>
-        <el-table-column min-width="180px" label="视频描述">
+        <el-table-column min-width="160px" label="视频描述">
           <template slot-scope="{row}">
             <span>{{ row.description }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column class-name="status-col" label="状态" width="110">
+        <el-table-column class-name="status-col" label="状态" width="130">
           <template slot-scope="{row}">
-            <el-tag :type="row.status | statusFilter">
-              {{ row.status }}
+            <el-tag :type="row.frame_status | statusFilter">
+              {{ row.frame_status }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column align="center" label="操作" width="150px">
           <template slot-scope="{row}">
             <el-button v-if="row.show_extract_button" type="primary" size="small" icon="el-icon-edit"
-                       @click="extracting_whole_body_bone_features(row)">
-              分离特征
+                       @click="extracting_rgb_frames(row)">
+              分离RGB帧
             </el-button>
-            <el-button v-else type="success" size="small" icon="el-icon-success" @click="download_features_files(row)">
-              下载特征
+            <el-button v-else type="success" size="small" icon="el-icon-success" @click="getVideoFrames(row)">
+              显示RGB帧
             </el-button>
 
           </template>
@@ -171,9 +183,9 @@ export default {
   filters: {
     statusFilter(status) {
       const statusMap = {
-        '已提取特征': 'success',
+        '已分离RGB帧': 'success',
         '': 'info',
-        '未提取特征': 'danger'
+        '未提取RGB帧': 'danger'
       }
       return statusMap[status]
     }
@@ -187,6 +199,7 @@ export default {
       }
     }
     return {
+      imageUrls: [],
       showProgress: false, // 是否显示进度条弹窗
       progressPercentage: 0, // 进度条百分比
       show_extract_button: true,
@@ -213,6 +226,33 @@ export default {
     this.getList()
   },
   methods: {
+    getVideoFrames(row) {
+      this.$message({
+        message: '获取RGB视频帧成功!',
+        type: 'success'
+      });
+      axios.post('http://127.0.0.1:8000/get_video_frames/', row, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+      }).then(response => {
+        console.log(response)
+        if (response.status === 200) {
+          this.$message({
+            message: '获取RGB视频帧成功!',
+            type: 'success'
+          });
+          this.imageUrls = response.data.data
+
+        }
+      }).catch(error => {
+        this.$message({
+          message: '获取RGB视频帧失败，请稍后重试...',
+          type: 'error'
+        });
+      });
+    },
     handleChange(file, fileList) { //文件数量改变
       this.fileList = fileList;
     },
@@ -303,59 +343,20 @@ export default {
     handleProgressClose() {
       this.progressPercentage = 0
     },
-    download_features_files(row) {
-      this.$confirm('是否下载该视频的特征文件', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        axios.post('http://127.0.0.1:8000/download_wholePose_file/', row, {
-          responseType: 'blob',  // 指定响应数据类型为 blob
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
-          }
-        }).then(response => {
-          const filename = 'wholePose_' + row.videoName + '.txt';  // 下载的文件名，根据实际情况修改
-          const blob = new Blob([response.data]);
-          const link = document.createElement('a');
-          const objectUrl = URL.createObjectURL(blob);
-          link.href = objectUrl;
-          link.download = filename;
-          link.style.display = 'none';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(objectUrl);
-          this.$message({
-            type: 'success',
-            message: '下载成功!'
-          });
-        }).catch(error => {
-          console.error('下载文件时发生错误:', error);
-          this.$message.error('下载文件时发生错误');
-        });
-      }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消下载'
-        });
-      });
-    },
-    extracting_whole_body_bone_features(row) {
+    extracting_rgb_frames(row) {
       // this.listLoading = true
       // 显示进度条弹窗
       this.showProgress = true
       let progress = 0
       const timer = setInterval(() => {
-        progress += Math.floor(Math.random() * 4) + 1
+        progress += Math.floor(Math.random() * 8) + 5
         if (progress > 95) {
           clearInterval(timer)
           return
         }
         this.progressPercentage = progress
       }, 700)
-      axios.post('http://127.0.0.1:8000/extract_wholepose/', row, {
+      axios.post('http://127.0.0.1:8000/split_video_to_frames/', row, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': 'Bearer ' + localStorage.getItem('token')
@@ -364,9 +365,10 @@ export default {
         .then(response => {
           if (response.status === 200) {
             this.$message({
-              message: '生成全身姿态估计成功!',
+              message: '生成RGB视频帧成功!',
               type: 'success'
             });
+            this.imageUrls = response.data.data
           }
           this.getList()
           this.listLoading = false
@@ -375,7 +377,7 @@ export default {
         })
         .catch(error => {
           this.$message({
-            message: '生成全身姿态估计失败，请重试...',
+            message: '生成RGB视频帧失败，请重试...',
             type: 'error'
           })
           this.listLoading = false
@@ -462,14 +464,54 @@ export default {
   font-size: larger;
 }
 
-.edit-input {
-  padding-right: 100px;
+.demonstration {
+  text-align: center;
+  font-size: 22px;
+  margin: 20px;
 }
 
-.cancel-btn {
-  position: absolute;
-  right: 15px;
-  top: 10px;
+.sliding-windows {
+  justify-content: center;
+}
+
+.image-gallery {
+  padding-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px; /* 控制图片之间的小分割 */
+}
+
+.image-item {
+  width: 120px;
+  height: 90px;
+
+  /*flex: 0 0 calc(25% - 10px); !* 控制每行显示的图片数量和大小 *!*/
+}
+
+.image-item img {
+  width: 100%;
+  height: auto;
+}
+
+.block {
+  padding: 0 20px;
+}
+
+.el-carousel__item h3 {
+  color: #475669;
+  font-size: 14px;
+  opacity: 0.75;
+  line-height: 150px;
+  margin: 0;
+}
+
+.el-carousel__item:nth-child(2n) {
+  background-color: #99a9bf;
+}
+
+.el-carousel__item:nth-child(2n+1) {
+  background-color: #d3dce6;
 }
 
 .upload-box {
