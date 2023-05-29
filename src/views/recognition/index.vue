@@ -58,7 +58,7 @@
           </div>
           <div class="select-block">
             <div class="algorithm-title">算法</div>
-            <el-select class="select" v-model="algorithm" placeholder="请选择">
+            <el-select class="select" v-model="algorithm" placeholder="请选择" :disabled="disabled_status">
               <el-option
                 v-for="item in algorithmOptions"
                 :key="item.value"
@@ -69,7 +69,7 @@
           </div>
           <div class="select-block">
             <div class="algorithm-title">数据集</div>
-            <el-select class="select" v-model="dataset" placeholder="请选择">
+            <el-select class="select" v-model="dataset" placeholder="请选择" :disabled="disabled_status">
               <el-option
                 v-for="item in datasetOptions"
                 :key="item.value"
@@ -84,16 +84,51 @@
               <el-step title="步骤 2" description="生成RGB帧"></el-step>
               <el-step title="步骤 3" description="运行模型"></el-step>
             </el-steps>
-            <el-button style="margin-top: 12px;" @click="next">
-              {{ activeDesc[video.active[selectedThumbnailIndex]] }}
+            <el-button v-if="video.active[selectedThumbnailIndex]===0" style="margin-top: 12px;" @click="next"
+                       :disabled="disabled_status">
+              生成全身姿态估计
+            </el-button>
+            <el-button v-else-if="video.active[selectedThumbnailIndex]===1" style="margin-top: 12px;" @click="next"
+                       type="warning" :disabled="disabled_status">
+              生成RGB帧
+            </el-button>
+            <el-button v-else-if="video.active[selectedThumbnailIndex]===2" style="margin-top: 12px;" @click="next"
+                       type="primary" :disabled="disabled_status">
+              运行模型预测
+            </el-button>
+            <el-button v-else style="margin-top: 12px;" @click="next" type="success">
+              预测成功
             </el-button>
             <el-divider></el-divider>
           </div>
           <div class="show-result">
-            <div class="show-result-title">前五名预测结果</div>
-            <div class="empty-img">
-              <img src="https://img.ixintu.com/download/jpg/20200726/fc0a376507f1116fd382240c13aa7699_512_512.jpg!ys"/>
-            </div>
+            <el-tabs type="border-card">
+              <el-tab-pane label="姿态估计结果">姿态估计结果</el-tab-pane>
+              <el-tab-pane label="RGB帧">RGB帧</el-tab-pane>
+              <el-tab-pane label="前五名预测结果">
+                <div class="show-result-title">前五名预测结果</div>
+                <div v-if="video.result[selectedThumbnailIndex] && video.result[selectedThumbnailIndex].length===5"
+                     class="demo-progress">
+                  <div class="progress-block"
+                       v-for="(result, index) in prediction_result.scores"
+                       :key="index">
+                    <el-text class="mx-1 progress-block-text" size="large">
+                      {{ prediction_result.prediction_label[index] }}
+                    </el-text>
+                    <el-progress :text-inside="true"
+                                 :stroke-width="22"
+                                 :percentage="prediction_result.scores[index]"/>
+                  </div>
+                </div>
+                <div v-else
+                     class="empty-img">
+                  <img
+                    src="https://img.ixintu.com/download/jpg/20200726/fc0a376507f1116fd382240c13aa7699_512_512.jpg!ys"/>
+                </div>
+              </el-tab-pane>
+            </el-tabs>
+
+
           </div>
         </div>
         <div>
@@ -122,18 +157,17 @@ export default {
   name: "index",
   data() {
     return {
+      disabled_status: false,
       showProgress: false, // 是否显示进度条弹窗
       progressPercentage: 0, // 进度条百分比
       active: 0,
       algorithm: 'I3D',
-      activeDesc: [
-        '生成全身姿态估计',
-        '生成RGB帧',
-        '运行模型预测',
-        '成功！！！'
-      ],
       dataset: 'WLASL',
       topbar_bg: topbar_bg,
+      prediction_result: {
+        prediction_label: [],
+        scores: [],
+      },
       video: {
         shape: [[320, 240], [288, 192], [640, 480]],
         duration: [2.2, 1.2, 1.3],
@@ -142,6 +176,7 @@ export default {
         sourceUrls: [video1, video2, video3],
         active: [],
         videoId: [],
+        result: [],
       },
       videoInfo: [[2, 64], [2, 58], [1, 34]],
       selectedThumbnailIndex: 0,
@@ -190,7 +225,9 @@ export default {
   },
   methods: {
     next() {
+      this.disabled_status = true
       if (!this.checkInfoNeeded()) {
+        this.disabled_status = false
         return;
       }
       const currentActive = this.video.active[this.selectedThumbnailIndex]
@@ -201,6 +238,7 @@ export default {
       } else {
         this.predictVideo()
       }
+      this.disabled_status = false
     },
     predictVideo() {
       this.showProgress = true
@@ -233,6 +271,7 @@ export default {
             const idx = this.selectedThumbnailIndex
             this.getAllVideoInfo()
             this.selectedThumbnailIndex = idx
+            this.active++
           }
         })
         .catch(error => {
@@ -245,8 +284,6 @@ export default {
     },
     handleProgressClose() {
       this.progressPercentage = 0
-      // 关闭进度条弹窗
-      this.showProgress = false
     },
     extractFrames() {
       this.showProgress = true
@@ -277,6 +314,7 @@ export default {
               type: 'success'
             });
             this.getAllVideoInfo()
+            this.active++
           }
           // 关闭进度条弹窗
           this.showProgress = false
@@ -320,6 +358,7 @@ export default {
           // 关闭进度条弹窗
           this.showProgress = false
           this.getAllVideoInfo()
+          this.active++
         }
       })
         .catch(error => {
@@ -455,6 +494,13 @@ export default {
         this.selectedThumbnailIndex = index
         this.active = this.video.active[index]
       }
+      const result = this.video.result[this.selectedThumbnailIndex]
+      this.prediction_result.prediction_label = []
+      this.prediction_result.scores = []
+      for (var i = 0; i < result.length; i++) {
+        this.prediction_result.prediction_label.push(result[i][0])
+        this.prediction_result.scores.push(result[i][1])
+      }
     },
     getAllVideoInfo() {
       const formData = new FormData();
@@ -471,6 +517,22 @@ export default {
             type: 'success'
           });
           this.video = response.data.data
+
+          // console.log(this.video.result.length)
+          // for (var i = 0; i < this.video.result.length; i++) {
+          //   console.log(i)
+          //   const label = []
+          //   for (var j = 0; j < this.video.result[i].length; j++) {
+          //     label.push(this.video.result[i][0])
+          //   }
+          //   this.prediction_result.prediction_label.push(label)
+          //   // this.prediction_result.prediction_label.push(this.video.result[i][0])
+          //   // if (this.video.result[i].length > 1) {
+          //   //   // this.video.result[i] = JSON.parse(this.video.result[i])
+          //   //   console.log(this.video.result[i])
+          //   // }
+          // }
+          // console.log(this.prediction_result);
         }
       })
     }
@@ -485,6 +547,11 @@ export default {
   background-size: cover;
   background-repeat: no-repeat;
   background-image: url("https://cdn.elearningindustry.com/wp-content/uploads/2021/07/How-To-Leverage-Hybrid-Learning-As-A-Catalyst-For-Digital-Economy-Growth_landing-1920x560-1.png");
+}
+
+.demo-progress .el-progress--line {
+  margin-bottom: 15px;
+  width: 350px;
 }
 
 .top-tip1 {
@@ -665,8 +732,22 @@ pre {
 
 }
 
+.progress-block {
+  display: flex;
+}
+
+.progress-block-text {
+  width: 100px;
+}
+
 .show-result-title {
   margin: 10px 0;
+  font-weight: bold;
+  font-size: large;
+}
+
+.demo-progress {
+  margin: 20px 0;
 }
 
 .empty-img {
