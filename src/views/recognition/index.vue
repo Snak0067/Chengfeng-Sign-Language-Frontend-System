@@ -104,7 +104,19 @@
           <div class="show-result">
             <el-tabs type="border-card">
               <el-tab-pane label="姿态估计结果">姿态估计结果</el-tab-pane>
-              <el-tab-pane label="RGB帧">RGB帧</el-tab-pane>
+              <el-tab-pane label="RGB帧">
+                <div class="demonstration">
+                  <el-button @click="getVideoFrames">显示图片</el-button>
+                  RGB分割结果图片展示
+                </div>
+                <el-carousel trigger="click" height="200px" class="sliding-windows">
+                  <el-carousel-item v-for="imgRows in imageUrls" :key="imgRows" class="image-gallery">
+                    <div class="image-item" v-for="image in imgRows" :key="image.id">
+                      <img :src="image" alt="Image"/>
+                    </div>
+                  </el-carousel-item>
+                </el-carousel>
+              </el-tab-pane>
               <el-tab-pane label="前五名预测结果">
                 <div class="show-result-title">前五名预测结果</div>
                 <div v-if="video.result[selectedThumbnailIndex] && video.result[selectedThumbnailIndex].length===5"
@@ -134,6 +146,9 @@
         <div>
           <!--      算法加载进度条   -->
           <el-dialog :visible.sync="showProgress" :before-close="handleProgressClose">
+            <el-text class="mx-1 prograss-bar-text" size="large">
+              {{ active_name[active] }}
+            </el-text>
             <el-progress :percentage="progressPercentage"></el-progress>
           </el-dialog>
 
@@ -157,9 +172,15 @@ export default {
   name: "index",
   data() {
     return {
+      imageUrls: [],
       disabled_status: false,
       showProgress: false, // 是否显示进度条弹窗
       progressPercentage: 0, // 进度条百分比
+      active_name: {
+        0: "生成全身姿态估计",
+        1: "生成RGB帧",
+        2: "运行模型预测",
+      },
       active: 0,
       algorithm: 'I3D',
       dataset: 'WLASL',
@@ -224,6 +245,38 @@ export default {
     this.getAllVideoInfo()
   },
   methods: {
+    getVideoFrames() {
+
+      const info = {
+        "id": this.video.videoId[this.selectedThumbnailIndex]
+      }
+      console.log(info)
+      this.$message({
+        message: '获取RGB视频帧成功!',
+        type: 'success'
+      });
+      axios.post('http://127.0.0.1:8000/get_reccoginition_video_frames/', info, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+      }).then(response => {
+        console.log(response)
+        if (response.status === 200) {
+          this.$message({
+            message: '获取RGB视频帧成功!',
+            type: 'success'
+          });
+          this.imageUrls = response.data.data
+
+        }
+      }).catch(error => {
+        this.$message({
+          message: '获取RGB视频帧失败，请稍后重试...',
+          type: 'error'
+        });
+      });
+    },
     next() {
       this.disabled_status = true
       if (!this.checkInfoNeeded()) {
@@ -501,6 +554,7 @@ export default {
         this.prediction_result.prediction_label.push(result[i][0])
         this.prediction_result.scores.push(result[i][1])
       }
+      this.imageUrls = []
     },
     getAllVideoInfo() {
       const formData = new FormData();
@@ -750,6 +804,11 @@ pre {
   margin: 20px 0;
 }
 
+.prograss-bar-text {
+  margin-top: 20px;
+  font-size: 20px;
+}
+
 .empty-img {
   display: flex;
   align-items: center;
@@ -767,6 +826,36 @@ pre {
 
 .algorithm-title {
   width: 100px;
+}
+
+.demonstration {
+  text-align: center;
+  font-size: 22px;
+  margin: 20px;
+}
+
+.sliding-windows {
+  justify-content: center;
+}
+
+.image-gallery {
+  padding-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px; /* 控制图片之间的小分割 */
+}
+
+.image-item {
+  width: 120px;
+  height: 90px;
+
+  /*flex: 0 0 calc(25% - 10px); !* 控制每行显示的图片数量和大小 *!*/
+}
+
+.image-item img {
+  width: 100%;
+  height: auto;
 }
 
 </style>

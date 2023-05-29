@@ -85,7 +85,7 @@
         </el-table-column>
         <el-table-column align="center" label="操作" width="150px">
           <template slot-scope="{row}">
-            <el-button v-if="row.show_extract_button" type="primary" size="small" icon="el-icon-edit"
+            <el-button v-if="row.show_extract_pose_button" type="primary" size="small" icon="el-icon-edit"
                        @click="extracting_whole_body_bone_features(row)">
               分离特征
             </el-button>
@@ -188,7 +188,7 @@ export default {
     return {
       showProgress: false, // 是否显示进度条弹窗
       progressPercentage: 0, // 进度条百分比
-      show_extract_button: true,
+      show_extract_pose_button: true,
       fileList: [],
       videoText: {
         videoName: '',

@@ -2,43 +2,45 @@
   <div class="dashboard-editor-container">
     <github-corner class="github-corner"/>
     <div class="homepage-introduce-top-title">欢迎使用乘风手语识别系统</div>
-    <el-row style="background:#fff;margin-bottom:32px;margin-top: 20px;padding: 16px 16px 0 24px;">
+    <!--    <panel-group @handleSetLineChartData="handleSetLineChartData"/>-->
+    <el-row style="background:#fff;margin-bottom:16px;margin-top:16px;padding: 5px 20px;">
       <p class="homepage-introduce-top-content">
-        乘风手语是一个面向企业和个人开发者的零门槛AI手语识别训练平台，为零算法基础的开发者提供定制高精度AI手语模型的服务，包括数据处理、模型训练、服务管理、模型部署功能模块。
+        乘风手语是一个面向企业和个人用户的零门槛AI手语识别应用系统，为零算法基础的开发者提供定制高精度AI手语模型的服务，包括数据处理、模型训练、服务管理、模型部署功能模块。
         手语识别模型用于处理不同场景下的手语表演者演示的手语，可以将手语视频分离成六种模态，包括RGB帧、骨架等形势，大幅提高手语识别的正确率</p>
       <div class="homepage-introduce-blocks">
         <div class="homepage-introduce-block">
           <img :src="img1">
           <div class="homepage-introduce-text">
-            <p class="homepage-introduce-text-title">数据处理</p>
-            <p class="homepage-introduce-text-content">提供闭环的数据管理功能，从数据上传、标注、训练到回流</p>
+            <p class="homepage-introduce-text-title">有效的时空特征提取</p>
+            <p class="homepage-introduce-text-content">提供丰富的数据上传功能，从数据上传、标注、训练到回流</p>
           </div>
         </div>
         <div class="homepage-introduce-block">
           <img :src="img2">
           <div class="homepage-introduce-text">
-            <p class="homepage-introduce-text-title">模型训练</p>
-            <p class="homepage-introduce-text-content">提供丰富的训练方式，零代码轻松获得高精度模型</p>
+            <p class="homepage-introduce-text-title">姿态估计</p>
+            <p class="homepage-introduce-text-content">提供精准的人体姿态估计，零代码轻松获得高精度模型</p>
           </div>
         </div>
         <div class="homepage-introduce-block">
           <img :src="img3">
           <div class="homepage-introduce-text">
-            <p class="homepage-introduce-text-title">模型校验</p>
-            <p class="homepage-introduce-text-content">提供详细的模型评估报告，支持在线校验，助力针对性优化模型</p>
+            <p class="homepage-introduce-text-title">分离RGB帧</p>
+            <p class="homepage-introduce-text-content">轻松分离手语视频中的每一帧</p>
           </div>
         </div>
         <div class="homepage-introduce-block">
           <img :src="img4">
           <div class="homepage-introduce-text">
             <p class="homepage-introduce-text-title">手语识别</p>
-            <p class="homepage-introduce-text-content">提供更高精度手语识别，突破行业壁垒，造福聋哑群体，构建无障碍的沟通环境</p>
+            <p class="homepage-introduce-text-content">
+              提供更高精度手语识别，突破行业壁垒，造福聋哑群体，构建无障碍的沟通环境</p>
           </div>
         </div>
       </div>
     </el-row>
-    <el-row style="background:#fff;margin-bottom:32px;margin-top: 20px;padding: 16px 16px 0 24px;">
-      <div>场景范例</div>
+    <el-row style="background:#fff;margin-bottom:16px;margin-top: 16px;padding: 16px 16px 0 24px;">
+      <div style="font-size: 20px">场景范例</div>
       <p class="homepage-introduce-top-content">
         乘风手语识别系统支持手语识别结果的分析和数据可视化展示，可以对手语视频进行分析并提取手势特征。同时拥有手语翻译功能，可以自动将手语识别结果翻译成其他语言的文字输出，方便跨语言交流。此外，该系统还可以增加不同手语识别模型框架的对比，以提高识别精度和效率。
       </p>
@@ -54,7 +56,8 @@
           <img class="homepage-introduce-img" :src="img6">
           <div class="homepage-introduce-text">
             <p class="homepage-introduce-text-title">建模手语视频中长期、短期依赖关系</p>
-            <p class="homepage-introduce-text-content">有效建模长期和短期依赖关系，提取出细致的局部信息和高级的全局信息</p>
+            <p class="homepage-introduce-text-content">
+              有效建模长期和短期依赖关系，提取出细致的局部信息和高级的全局信息</p>
           </div>
         </div>
         <div class="homepage-introduce-block">
@@ -68,13 +71,12 @@
           <img class="homepage-introduce-img" :src="img8">
           <div class="homepage-introduce-text">
             <p class="homepage-introduce-text-title">模型的高鲁棒性</p>
-            <p class="homepage-introduce-text-content">算法可应对噪声、光线变化等干扰因素，基于数据增强以提高模型的鲁棒性</p>
+            <p class="homepage-introduce-text-content">
+              算法可应对噪声、光线变化等干扰因素，基于数据增强以提高模型的鲁棒性</p>
           </div>
         </div>
       </div>
     </el-row>
-    <panel-group @handleSetLineChartData="handleSetLineChartData"/>
-
 
     <el-row :gutter="32">
       <el-col :xs="24" :sm="24" :lg="8">
@@ -197,14 +199,14 @@ export default {
 
 .homepage-introduce-blocks {
   display: flex;
-  padding: 10px;
+  padding: 0 10px;
   justify-content: center;
   align-items: center;
 }
 
 .homepage-introduce-block {
   flex: 1;
-  padding: 10px;
+  padding: 0 10px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -213,18 +215,18 @@ export default {
 }
 
 .homepage-introduce-top-title {
-  font-size: 26px;
+  font-size: 22px;
 
 }
 
 .homepage-introduce-img {
-  height: 200px;
-  width: 280px;
+  height: 160px;
+  width: 240px;
 }
 
 .homepage-introduce-top-content {
   font-size: 15px;
-  line-height: 1.7;
+  line-height: 1.5;
   color: #6e6e6e;
 }
 
